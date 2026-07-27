@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gan TV - Theatre Player</title>
+    <title>GAN TV - Theatre Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -31,7 +31,7 @@
             <i class="fa-solid fa-arrow-left"></i> Back to Catalogue
         </a>
         <div class="text-[#e50914] text-2xl font-black tracking-tighter">
-            Gan <span class="text-white">TV</span>
+            GAN <span class="text-white">TV</span>
         </div>
         <a href="filter.html" class="text-xs bg-[#222] hover:bg-[#333] text-gray-300 hover:text-white px-3 py-1.5 rounded-full border border-[#444] transition-colors flex items-center gap-1.5">
             <i class="fa-solid fa-sliders text-[#e50914]"></i> Discover
@@ -193,7 +193,7 @@
                 fetchMediaDetails(id, targetType);
             } else {
                 document.getElementById('titleText').textContent = "No Content Selected!";
-                document.getElementById('playerPlaceholder').innerHTML = `<p class="text-red-500 font-semibold">Please select a title from <a href="index.html" class="underline text-white">Gan TV Home</a>.</p>`;
+                document.getElementById('playerPlaceholder').innerHTML = `<p class="text-red-500 font-semibold">Please select a title from <a href="index.html" class="underline text-white">GAN TV Home</a>.</p>`;
             }
         });
 
@@ -278,7 +278,7 @@
 
         function buildTheatre(item, type) {
             const title = item.title || item.name || `Title #${item.id}`;
-            document.title = `${title} - Gan TV Player`;
+            document.title = `${title} - GAN TV Player`;
             document.getElementById('titleText').textContent = title;
 
             const backdrop = item.backdrop_path ? `${IMAGE_ORIGINAL_URL}${item.backdrop_path}` : (item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `${IMAGE_ORIGINAL_URL}${item.poster_path}`) : '');
