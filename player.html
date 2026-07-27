@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flex TV - Theatre Player</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -109,22 +111,28 @@
     <div id="ambientGlow" class="absolute inset-0 z-0 bg-cover bg-center ambient-glow transition-all duration-1000"></div>
 
     <!-- Top Navigation Bar -->
-    <header class="relative z-30 px-6 py-4 bg-black/50 backdrop-blur-md border-b border-[#222] flex items-center justify-between">
+    <header class="relative z-30 px-6 py-3.5 bg-black/50 backdrop-blur-md border-b border-[#222] flex items-center justify-between">
         <a href="index.html" class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-semibold">
             <i class="fa-solid fa-arrow-left"></i> Back to Catalogue
         </a>
-        <div class="text-[#e50914] text-2xl font-black tracking-tighter">
-            FLEX <span class="text-white">TV</span>
+        <div class="text-[#e50914] text-2xl font-black tracking-tighter flex items-center gap-2">
+            <img src="favicon.ico" class="w-6 h-6 inline-block" onerror="this.style.display='none'">
+            <span>FLEX <span class="text-white">TV</span></span>
         </div>
 
         <div class="flex items-center gap-2">
-            <!-- ADBLOCKER PILL BADGE BEFORE DISCOVER -->
+            <!-- ADBLOCKER PILL BADGE -->
             <span onclick="showAdblockModal()" class="px-3 py-1.5 rounded-full text-xs font-extrabold bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 flex items-center gap-1.5 cursor-pointer hover:bg-emerald-900/90 transition-all shadow-md">
                 <i class="fa-solid fa-shield-halved text-emerald-400"></i> AdBlocker: Active
             </span>
 
-            <a href="filter.html" class="text-xs bg-[#222] hover:bg-[#333] text-gray-300 hover:text-white px-3 py-1.5 rounded-full border border-[#444] transition-colors flex items-center gap-1.5">
+            <a href="filter.html" class="text-xs bg-[#222] hover:bg-[#333] text-gray-300 hover:text-white px-3 py-1.5 rounded-full border border-[#444] transition-colors flex items-center gap-1.5 font-semibold">
                 <i class="fa-solid fa-sliders text-[#e50914]"></i> Discover
+            </a>
+
+            <!-- DESKTOP APP (.EXE) DOWNLOAD BUTTON -->
+            <a href="FlexTV-Setup.exe" download class="ml-1 px-3 py-1.5 rounded-full text-xs font-bold bg-[#e50914] text-white hover:bg-red-700 transition-all flex items-center gap-1.5 hidden md:inline-flex shrink-0 shadow-md">
+                <i class="fa-solid fa-desktop text-xs"></i> Desktop App (.exe)
             </a>
         </div>
     </header>
@@ -154,12 +162,15 @@
                     </button>
                 </div>
 
+                <!-- FLEXSHIELD GLASS INTERCEPTOR OVERLAY (Intercepts & Disarms Initial Popunder Ads) -->
+                <div id="adShield" onclick="disarmAdShield()" class="absolute inset-0 z-25 bg-transparent cursor-pointer" title="Click to start video stream"></div>
+
                 <!-- SUBTITLE OVERLAY LAYER (Visible in Fullscreen & Normal Mode) -->
                 <div id="subtitleOverlay" class="hidden">
                     <div id="subtitleText" class="sub-text-box"></div>
                 </div>
 
-                <!-- UNRESTRICTED STREAM PLAYER (SANDBOX REMOVED FOR 100% PLAYABILITY) -->
+                <!-- STREAM PLAYER IFRAME (Clean, Unsandbox-blocked Stream Compatible Frame) -->
                 <iframe id="mainPlayer" class="absolute inset-0 w-full h-full z-20 hidden bg-black" frameborder="0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"></iframe>
             </div>
 
@@ -358,6 +369,12 @@
 
         function showAdblockModal() { document.getElementById('adblockStatusModal').classList.remove('hidden'); }
         function hideAdblockModal() { document.getElementById('adblockStatusModal').classList.add('hidden'); }
+
+        function disarmAdShield() {
+            const shield = document.getElementById('adShield');
+            shield.style.display = 'none'; // Disarms the glass shield on first click so interaction reaches video
+            setTimeout(() => { shield.style.display = 'block'; }, 120000); // Re-arms after 2 mins if needed
+        }
 
         const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
         const IMAGE_ORIGINAL_URL = "https://image.tmdb.org/t/p/original";
@@ -651,6 +668,10 @@
 
             // Reset Subtitles clock when switching server/content
             resetSubtitleClock();
+
+            // Re-arm AdShield glass interceptor layer
+            const shield = document.getElementById('adShield');
+            if (shield) shield.style.display = 'block';
 
             const servers = SERVERS[targetType] || SERVERS.movie;
             const srv = servers[activeServerIndex];
