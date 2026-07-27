@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GAN TV - Home</title>
+    <title>Flex TV - Home</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -14,6 +14,7 @@
             background-color: #141414; /* Dark Cinematic */
             color: #e5e5e5;
             overflow-x: hidden;
+            padding-bottom: 70px; /* Offset for Mobile Nav */
         }
 
         /* Splash Screen */
@@ -120,15 +121,29 @@
         .scroll-btn:hover { background: rgba(229,9,20,0.8); }
         .scroll-btn.left { left: 0; }
         .scroll-btn.right { right: 0; }
+
+        .mobile-bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 65px;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid #262626;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 9990;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative">
 
     <!-- Splash Screen -->
     <div id="splash-screen">
-        <div class="text-[#e50914] text-5xl md:text-7xl font-black tracking-tighter mb-4 animate-pulse">
-            GAN <span class="text-white">TV</span>
+        <div class="text-[#e50914] text-5xl md:text-7xl font-black tracking-tighter mb-1 animate-pulse">
+            FLEX <span class="text-white">TV</span>
         </div>
+        <div class="text-[10px] md:text-xs font-semibold tracking-widest text-gray-500 uppercase mb-4">by Ganula</div>
         <div class="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin shadow-[0_0_15px_#e50914]"></div>
     </div>
 
@@ -139,16 +154,23 @@
         <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-5">
             <div class="flex items-center gap-3">
                 <a href="index.html" class="text-[#e50914] text-3xl font-black tracking-tighter hover:scale-105 transition-transform">
-                    GAN <span class="text-white">TV</span>
+                    FLEX <span class="text-white">TV</span>
                 </a>
             </div>
 
-            <!-- Public Navigation Tabs (Public Clean Mode) -->
-            <div class="flex bg-[#000] border border-[#333] rounded-full p-1 w-full sm:w-auto overflow-x-auto hide-scroll">
+            <!-- Navigation Tabs -->
+            <div class="flex bg-[#000] border border-[#333] rounded-full p-1 w-full sm:w-auto overflow-x-auto hide-scroll items-center gap-1">
                 <button onclick="switchCategory('all')" id="pill-all" class="px-6 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all theme-btn-active text-center whitespace-nowrap">Home</button>
                 <button onclick="switchCategory('movie')" id="pill-movie" class="px-6 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all text-center whitespace-nowrap">Movies</button>
                 <button onclick="switchCategory('tv')" id="pill-tv" class="px-6 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all text-center whitespace-nowrap">TV Shows</button>
                 <button onclick="switchCategory('kdrama')" id="pill-kdrama" class="px-6 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all text-center whitespace-nowrap"><i class="fa-solid fa-heart text-red-500 mr-1"></i> K-Dramas</button>
+                <button onclick="switchCategory('anime')" id="pill-anime" class="px-6 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all text-center whitespace-nowrap"><i class="fa-solid fa-fire text-yellow-500 mr-1"></i> Anime</button>
+                
+                <!-- ADBLOCKER PILL BADGE BEFORE DISCOVER -->
+                <span onclick="showAdblockModal()" class="ml-2 px-3 py-1.5 rounded-full text-xs font-extrabold bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 flex items-center gap-1.5 cursor-pointer hover:bg-emerald-900/90 transition-all shadow-md shrink-0">
+                    <i class="fa-solid fa-shield-halved text-emerald-400"></i> AdBlocker: Active
+                </span>
+
                 <a href="filter.html" class="px-6 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all text-center whitespace-nowrap"><i class="fa-solid fa-sliders mr-1"></i> Discover</a>
             </div>
 
@@ -201,14 +223,94 @@
         <div id="rowsWrapper" class="max-w-[1600px] mx-auto px-6 mt-8 md:-mt-10 relative z-30 flex flex-col gap-10 md:gap-14"></div>
     </main>
 
+    <!-- TIKTOK STYLE MOBILE BOTTOM NAVIGATION -->
+    <div class="md:hidden mobile-bottom-nav">
+        <button onclick="switchCategory('all')" class="flex flex-col items-center text-[#e50914]">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Home</span>
+        </button>
+        <button onclick="switchCategory('movie')" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-film text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Movies</span>
+        </button>
+        
+        <!-- TIKTOK CENTERED SEARCH BUTTON -->
+        <button onclick="window.location.href='filter.html?focus=search'" class="w-12 h-12 -mt-5 bg-[#e50914] rounded-full flex items-center justify-center text-white shadow-lg border-2 border-[#141414] hover:scale-105 transition-transform active:scale-95">
+            <i class="fa-solid fa-magnifying-glass text-lg"></i>
+        </button>
+
+        <button onclick="switchCategory('tv')" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-tv text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">TV Shows</span>
+        </button>
+        <button onclick="switchCategory('anime')" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-fire text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Anime</span>
+        </button>
+    </div>
+
+    <!-- ADBLOCK STATUS MODAL -->
+    <div id="adblockStatusModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-[#181818] max-w-md w-full rounded-2xl border border-[#333] p-6 shadow-2xl relative text-center">
+            <i class="fa-solid fa-shield-halved text-emerald-400 text-5xl mb-3 animate-pulse"></i>
+            <h3 class="text-xl font-extrabold text-white mb-2">FlexShield AdBlocker Engaged</h3>
+            <p class="text-xs text-gray-300 leading-relaxed mb-6">
+                Our in-built scriptlet blocker operates directly inside Flex TV. It neutralizes popup windows, click-under redirect ads, and top-level page hijack scripts automatically without triggering video sandbox errors!
+            </p>
+            <button onclick="hideAdblockModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-lg text-xs transition-colors shadow-lg">
+                Got it, Thanks!
+            </button>
+        </div>
+    </div>
+
     <!-- Hover Detail Popout -->
     <div id="hoverPopout" class="fixed w-80 rounded-xl overflow-hidden text-white pointer-events-none opacity-0 flex-col hidden"></div>
 
     <footer class="border-t border-[#222] mt-10 py-8 bg-[#111] text-center text-gray-500 text-sm">
-        <p>&copy; 2026 GAN TV. Powered by TMDb Engine.</p>
+        <p>&copy; 2026 Flex TV. Powered by TMDb Engine.</p>
     </footer>
 
     <script>
+        // FLEXSHIELD NATIVE ADBLOCK ENGINE (uBlock Style)
+        (function() {
+            const nativeOpen = window.open;
+            window.open = function(url, target, features) {
+                if (!url) return null;
+                try {
+                    const dest = new URL(url, window.location.href);
+                    if (dest.origin === window.location.origin || url.includes('player.html') || url.includes('filter.html') || url.includes('index.html')) {
+                        return nativeOpen.apply(window, arguments);
+                    }
+                } catch(e) {}
+                console.warn('[FlexShield] Blocked popup ad:', url);
+                return null;
+            };
+
+            document.addEventListener('click', function(e) {
+                let node = e.target;
+                while (node && node !== document) {
+                    if (node.tagName === 'A') {
+                        const href = node.getAttribute('href');
+                        if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                            try {
+                                const targetUrl = new URL(href, window.location.href);
+                                if (targetUrl.origin !== window.location.origin && !href.includes('index.html') && !href.includes('filter.html') && !href.includes('player.html')) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.warn('[FlexShield] Blocked external click ad:', href);
+                                    return false;
+                                }
+                            } catch(err) {}
+                        }
+                    }
+                    node = node.parentNode;
+                }
+            }, true);
+        })();
+
+        function showAdblockModal() { document.getElementById('adblockStatusModal').classList.remove('hidden'); }
+        function hideAdblockModal() { document.getElementById('adblockStatusModal').classList.add('hidden'); }
+
         const API_KEY = "8275056f6ced29fa22cc9fcdb7d41d86";
         const BASE_URL = "https://api.themoviedb.org/3";
         const IMG_URL = "https://image.tmdb.org/t/p/w500";
@@ -227,7 +329,14 @@
                 }, 800);
             }, 1000);
             
-            initHomeData();
+            // READ URL PARAMS FOR MOBILE DIRECTS (e.g. index.html?cat=movie)
+            const urlParams = new URLSearchParams(window.location.search);
+            const catParam = urlParams.get('cat');
+            if (catParam) {
+                switchCategory(catParam);
+            } else {
+                initHomeData();
+            }
         });
 
         // SECRET MODE SEARCH TRIGGERS
@@ -253,6 +362,19 @@
             return new Date().toISOString().split('T')[0];
         }
 
+        function getQualityBadge(releaseDateStr, type, itemId = 0) {
+            if (!releaseDateStr) return `<span class="bg-emerald-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">HD</span>`;
+            const diffDays = Math.round((new Date().getTime() - new Date(releaseDateStr).getTime()) / 86400000);
+            
+            // Tightened CAM window: 14 days
+            if (type === 'movie' && diffDays >= 0 && diffDays <= 14) {
+                return `<span class="bg-amber-500 text-black font-black px-1.5 py-0.5 rounded text-[10px] tracking-wider animate-pulse">CAM</span>`;
+            }
+            
+            const badgeTag = (itemId % 3 === 0) ? '4K' : ((itemId % 2 === 0) ? '2K' : 'HD');
+            return `<span class="bg-emerald-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">${badgeTag}</span>`;
+        }
+
         function cleanPublicFeed(items) {
             if (!items) return [];
             return items.filter(item => {
@@ -267,7 +389,7 @@
 
         function switchCategory(category) {
             currentTab = category;
-            ['all', 'movie', 'tv', 'kdrama'].forEach(cat => {
+            ['all', 'movie', 'tv', 'kdrama', 'anime'].forEach(cat => {
                 const btn = document.getElementById(`pill-${cat}`);
                 if (btn) {
                     if (cat === category) btn.classList.add('theme-btn-active');
@@ -280,6 +402,22 @@
         async function initHomeData() {
             const today = getTodayDateStr();
             const wrapper = document.getElementById('rowsWrapper');
+
+            // ANIME UNDER CONSTRUCTION DISPLAY
+            if (currentTab === 'anime') {
+                wrapper.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-20 text-center bg-[#181818]/60 backdrop-blur-md rounded-2xl border border-[#2a2a2a] p-8 shadow-2xl my-10">
+                        <i class="fa-solid fa-person-digging text-yellow-500 text-6xl mb-4 animate-bounce"></i>
+                        <h3 class="text-2xl font-black text-white mb-2">Anime Section Under Construction</h3>
+                        <p class="text-sm text-gray-400 max-w-md mb-6 leading-relaxed">We are currently upgrading our Japanese Anime CDN server clusters. Please check back soon!</p>
+                        <button onclick="switchCategory('movie')" class="bg-[#e50914] hover:bg-red-700 text-white font-extrabold px-6 py-2.5 rounded-lg text-xs transition-all shadow-lg">
+                            <i class="fa-solid fa-film mr-2"></i> Browse Movies Instead
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
             wrapper.innerHTML = '<div class="text-center py-10 text-gray-400 font-semibold animate-pulse"><i class="fa-solid fa-spinner fa-spin text-2xl text-[#e50914] mb-2"></i><br>Updating feed...</div>';
 
             if (currentTab === 'all') {
@@ -290,10 +428,10 @@
                 if (heroTrendingItems.length > 0) setupHeroCarousel(heroTrendingItems);
 
                 wrapper.innerHTML = `
-                    ${createRowHTML('row1', 'Trending Movies & Shows', '<i class="fa-solid fa-fire-flame-curved text-[#e50914] text-lg"></i>')}
-                    ${createRowHTML('row2', '🇰🇷 Top Trending K-Dramas (South Korea)', '<span class="text-xs font-normal text-red-400 bg-red-950/60 px-2 py-1 rounded-md border border-red-800/50">Mom\'s Special</span>')}
-                    ${createRowHTML('row3', 'New Release Movies')}
-                    ${createRowHTML('row4', 'Latest TV Show Episodes')}
+                    ${createRowHTML('row1', 'Trending Movies & Shows', '<i class="fa-solid fa-fire-flame-curved text-[#e50914] text-lg"></i>', 'filter.html?sort=popularity.desc')}
+                    ${createRowHTML('row2', '🇰🇷 Top Trending K-Dramas (South Korea)', '<span class="text-xs font-normal text-red-400 bg-red-950/60 px-2 py-1 rounded-md border border-red-800/50">Mom\'s Special</span>', 'filter.html?mode=tv')}
+                    ${createRowHTML('row3', 'New Release Movies', '', 'filter.html?mode=movie&sort=newest_released')}
+                    ${createRowHTML('row4', 'Latest TV Show Episodes', '', 'filter.html?mode=tv&sort=newest_released')}
                 `;
 
                 if (heroTrendingItems) renderRow(heroTrendingItems, 'row1');
@@ -319,9 +457,9 @@
                 if (heroTrendingItems.length > 0) setupHeroCarousel(heroTrendingItems, "K-Drama");
 
                 wrapper.innerHTML = `
-                    ${createRowHTML('row1', 'Popular K-Dramas (South Korea)', '<i class="fa-solid fa-heart text-red-500"></i>')}
-                    ${createRowHTML('row2', 'Latest Released K-Dramas')}
-                    ${createRowHTML('row3', 'Top Rated Korean Series')}
+                    ${createRowHTML('row1', 'Popular K-Dramas (South Korea)', '<i class="fa-solid fa-heart text-red-500"></i>', 'filter.html?mode=tv')}
+                    ${createRowHTML('row2', 'Latest Released K-Dramas', '', 'filter.html?mode=tv&sort=newest_released')}
+                    ${createRowHTML('row3', 'Top Rated Korean Series', '', 'filter.html?mode=tv&sort=vote_average.desc')}
                 `;
 
                 renderRow(await enrichTvEpisodeDates(heroTrendingItems), 'row1');
@@ -342,10 +480,10 @@
                 if (heroTrendingItems.length > 0) setupHeroCarousel(heroTrendingItems, "Movie");
 
                 wrapper.innerHTML = `
-                    ${createRowHTML('row1', 'Trending Movies')}
-                    ${createRowHTML('row2', 'Top Rated Blockbusters')}
-                    ${createRowHTML('row3', 'Popular Worldwide')}
-                    ${createRowHTML('row4', 'Upcoming Movies')}
+                    ${createRowHTML('row1', 'Trending Movies', '', 'filter.html?mode=movie&sort=popularity.desc')}
+                    ${createRowHTML('row2', 'Top Rated Blockbusters', '', 'filter.html?mode=movie&sort=vote_average.desc')}
+                    ${createRowHTML('row3', 'Popular Worldwide', '', 'filter.html?mode=movie&sort=popularity.desc')}
+                    ${createRowHTML('row4', 'Upcoming Movies', '', 'filter.html?mode=movie&sort=upcoming')}
                 `;
 
                 if (heroTrendingItems) renderRow(heroTrendingItems, 'row1');
@@ -370,10 +508,10 @@
                 if (heroTrendingItems.length > 0) setupHeroCarousel(heroTrendingItems, "Series");
 
                 wrapper.innerHTML = `
-                    ${createRowHTML('row1', 'Trending TV Shows')}
-                    ${createRowHTML('row2', 'Top Rated Series')}
-                    ${createRowHTML('row3', 'Popular Shows')}
-                    ${createRowHTML('row4', 'Ongoing Series')}
+                    ${createRowHTML('row1', 'Trending TV Shows', '', 'filter.html?mode=tv&sort=popularity.desc')}
+                    ${createRowHTML('row2', 'Top Rated Series', '', 'filter.html?mode=tv&sort=vote_average.desc')}
+                    ${createRowHTML('row3', 'Popular Shows', '', 'filter.html?mode=tv&sort=popularity.desc')}
+                    ${createRowHTML('row4', 'Ongoing Series', '', 'filter.html?mode=tv')}
                 `;
 
                 if (heroTrendingItems) renderRow(await enrichTvEpisodeDates(heroTrendingItems), 'row1');
@@ -392,12 +530,18 @@
             }
         }
 
-        function createRowHTML(rowId, title, extraTag = '') {
+        // ADDED SEE MORE BUTTONS
+        function createRowHTML(rowId, title, extraTag = '', seeMoreUrl = 'filter.html') {
             return `
                 <section class="row-container relative">
-                    <h2 class="text-xl md:text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                        ${title} ${extraTag}
-                    </h2>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+                            ${title} ${extraTag}
+                        </h2>
+                        <a href="${seeMoreUrl}" class="text-xs font-bold text-[#e50914] hover:text-red-400 transition-colors flex items-center gap-1 uppercase tracking-wider">
+                            See More <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </a>
+                    </div>
                     <div class="scroll-btn left" onclick="scrollRow('${rowId}', -1)"><i class="fa-solid fa-chevron-left"></i></div>
                     <div id="${rowId}" class="flex gap-4 overflow-x-auto snap-x snap-mandatory hide-scroll pb-4 scroll-smooth">
                         <div class="text-sm text-gray-500 py-10">Loading row...</div>
@@ -481,6 +625,7 @@
                 const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
                 const poster = item.poster_path ? `${IMG_URL}${item.poster_path}` : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
                 const type = item.isTV || item.media_type === 'tv' || item.name ? 'tv' : 'movie';
+                const qualityBadge = getQualityBadge(activeAirDate, type, item.id);
 
                 const card = document.createElement('div');
                 card.className = "movie-card rounded-md overflow-hidden bg-[#222] cursor-pointer flex flex-col h-[225px] sm:h-[270px] lg:h-[330px]";
@@ -493,6 +638,7 @@
                     <div class="relative w-full h-full bg-[#111]">
                         <img src="${poster}" alt="${title}" class="w-full h-full object-cover" loading="lazy">
                         <div class="absolute inset-0 gradient-overlay pointer-events-none"></div>
+                        <div class="absolute top-2 left-2 z-10">${qualityBadge}</div>
                         ${rating > 0 ? `<div class="absolute top-2 right-2 z-10 bg-black/80 backdrop-blur-md text-white font-bold px-2 py-1 rounded-md text-[10px] sm:text-xs flex items-center gap-1 border border-[#333]"><i class="fa-solid fa-star text-yellow-500 text-[10px]"></i> ${rating}</div>` : ''}
                         <div class="absolute bottom-3 left-3 right-3 z-10">
                             <h3 class="font-bold text-sm text-white line-clamp-2 leading-tight drop-shadow-md">${title}</h3>
