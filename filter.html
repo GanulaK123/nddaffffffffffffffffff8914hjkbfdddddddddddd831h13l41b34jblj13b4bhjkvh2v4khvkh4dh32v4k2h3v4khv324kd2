@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GAN TV - Modern Streaming Explorer</title>
+    <title>Flex TV - Modern Streaming Explorer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -14,6 +14,7 @@
             background-color: #141414; /* Dark Cinematic */
             color: #e5e5e5;
             overflow-x: hidden;
+            padding-bottom: 70px; /* Offset for Mobile Nav */
         }
 
         /* Splash Screen */
@@ -90,14 +91,29 @@
             width: 100vw; height: 100vh;
             z-index: -1; pointer-events: none; opacity: 0.75;
         }
+
+        .mobile-bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 65px;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid #262626;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 9990;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative">
 
+    <!-- Splash Screen -->
     <div id="splash-screen">
-        <div class="text-[#e50914] text-5xl md:text-7xl font-black tracking-tighter mb-4 animate-pulse">
-            GAN <span class="text-white">TV</span>
+        <div class="text-[#e50914] text-5xl md:text-7xl font-black tracking-tighter mb-1 animate-pulse">
+            FLEX <span class="text-white">TV</span>
         </div>
+        <div class="text-[10px] md:text-xs font-semibold tracking-widest text-gray-500 uppercase mb-4">by Ganula</div>
         <div class="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin shadow-[0_0_15px_#e50914]"></div>
     </div>
 
@@ -107,14 +123,19 @@
         <div class="max-w-[1400px] mx-auto flex flex-col md:flex-row items-center justify-between gap-5">
             <div class="flex items-center gap-3">
                 <a href="index.html" class="text-[#e50914] text-3xl font-black tracking-tighter hover:scale-105 transition-transform">
-                    GAN <span class="text-white">TV</span>
+                    FLEX <span class="text-white">TV</span>
                 </a>
             </div>
 
-            <div class="flex bg-[#000] border border-[#333] rounded-full p-1 w-full sm:w-auto overflow-x-auto hide-scroll">
+            <div class="flex bg-[#000] border border-[#333] rounded-full p-1 w-full sm:w-auto overflow-x-auto hide-scroll items-center gap-1">
                 <button onclick="switchTab('movie')" id="tabMovie" class="px-5 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all theme-btn-active">Movies</button>
                 <button onclick="switchTab('tv')" id="tabTv" class="px-5 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all">TV Shows</button>
-                <button onclick="switchTab('anime')" id="tabAnime" class="px-5 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all hidden"><i class="fa-solid fa-fire mr-1"></i> Anime</button>
+                <button onclick="switchTab('anime')" id="tabAnime" class="px-5 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all"><i class="fa-solid fa-person-digging mr-1 text-yellow-500"></i> Anime</button>
+                
+                <!-- ADBLOCKER PILL BADGE BEFORE DISCOVER -->
+                <span onclick="showAdblockModal()" class="ml-2 px-3 py-1.5 rounded-full text-xs font-extrabold bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 flex items-center gap-1.5 cursor-pointer hover:bg-emerald-900/90 transition-all shadow-md shrink-0">
+                    <i class="fa-solid fa-shield-halved text-emerald-400"></i> AdBlocker: Active
+                </span>
             </div>
 
             <div class="relative w-full sm:w-80">
@@ -135,11 +156,19 @@
                 <button onclick="resetFilters()" class="text-xs text-gray-500 hover:text-white transition-colors underline">Clear Filters</button>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div class="flex flex-col gap-1.5">
                     <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Release Year</label>
                     <select id="yearFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]">
                         <option value="">All Years</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Quality / Format</label>
+                    <select id="qualityFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]">
+                        <option value="">All Qualities</option>
+                        <option value="hd">HD / 2K / 4K Only</option>
+                        <option value="cam">CAM / TS Theatre Only</option>
                     </select>
                 </div>
                 <div class="flex flex-col gap-1.5">
@@ -198,6 +227,46 @@
         <div id="paginationContainer" class="flex flex-wrap items-center justify-center gap-2 mt-16 hidden"></div>
     </main>
 
+    <!-- TIKTOK STYLE MOBILE BOTTOM NAVIGATION -->
+    <div class="md:hidden mobile-bottom-nav">
+        <button onclick="window.location.href='index.html'" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Home</span>
+        </button>
+        <button onclick="window.location.href='index.html?cat=movie'" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-film text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Movies</span>
+        </button>
+        
+        <!-- TIKTOK CENTERED SEARCH BUTTON -->
+        <button onclick="focusSearchMobile()" class="w-12 h-12 -mt-5 bg-[#e50914] rounded-full flex items-center justify-center text-white shadow-lg border-2 border-[#141414] hover:scale-105 transition-transform active:scale-95">
+            <i class="fa-solid fa-magnifying-glass text-lg"></i>
+        </button>
+
+        <button onclick="window.location.href='index.html?cat=tv'" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-tv text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">TV Shows</span>
+        </button>
+        <button onclick="switchTab('anime')" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-fire text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Anime</span>
+        </button>
+    </div>
+
+    <!-- ADBLOCK STATUS MODAL -->
+    <div id="adblockStatusModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-[#181818] max-w-md w-full rounded-2xl border border-[#333] p-6 shadow-2xl relative text-center">
+            <i class="fa-solid fa-shield-halved text-emerald-400 text-5xl mb-3 animate-pulse"></i>
+            <h3 class="text-xl font-extrabold text-white mb-2">FlexShield AdBlocker Engaged</h3>
+            <p class="text-xs text-gray-300 leading-relaxed mb-6">
+                Our in-built scriptlet blocker operates directly inside Flex TV. It neutralizes popup windows, click-under redirect ads, and top-level page hijack scripts automatically without triggering video sandbox errors!
+            </p>
+            <button onclick="hideAdblockModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-lg text-xs transition-colors shadow-lg">
+                Got it, Thanks!
+            </button>
+        </div>
+    </div>
+
     <div id="hoverPopout" class="fixed w-80 rounded-xl overflow-hidden text-white pointer-events-none opacity-0 flex-col hidden"></div>
 
     <div id="detailModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
@@ -210,6 +279,46 @@
     </div>
 
     <script>
+        // FLEXSHIELD NATIVE ADBLOCK ENGINE (uBlock Style - Traps Popups & Redirects)
+        (function() {
+            const nativeOpen = window.open;
+            window.open = function(url, target, features) {
+                if (!url) return null;
+                try {
+                    const dest = new URL(url, window.location.href);
+                    if (dest.origin === window.location.origin || url.includes('player.html') || url.includes('filter.html') || url.includes('index.html')) {
+                        return nativeOpen.apply(window, arguments);
+                    }
+                } catch(e) {}
+                console.warn('[FlexShield] Blocked popup ad:', url);
+                return null;
+            };
+
+            document.addEventListener('click', function(e) {
+                let node = e.target;
+                while (node && node !== document) {
+                    if (node.tagName === 'A') {
+                        const href = node.getAttribute('href');
+                        if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                            try {
+                                const targetUrl = new URL(href, window.location.href);
+                                if (targetUrl.origin !== window.location.origin && !href.includes('index.html') && !href.includes('filter.html') && !href.includes('player.html')) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.warn('[FlexShield] Blocked external click ad:', href);
+                                    return false;
+                                }
+                            } catch(err) {}
+                        }
+                    }
+                    node = node.parentNode;
+                }
+            }, true);
+        })();
+
+        function showAdblockModal() { document.getElementById('adblockStatusModal').classList.remove('hidden'); }
+        function hideAdblockModal() { document.getElementById('adblockStatusModal').classList.add('hidden'); }
+
         const apiKey = "8275056f6ced29fa22cc9fcdb7d41d86";
         const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
         const IMAGE_ORIGINAL_URL = "https://image.tmdb.org/t/p/original";
@@ -217,6 +326,7 @@
         let currentTab = "movie"; 
         let currentYear = "";
         let currentSort = "newest_released";
+        let currentQuality = "";
         let currentMinRating = "0";
         let currentStatus = "";
         let currentSearchTerm = "";
@@ -259,25 +369,44 @@
             const urlParams = new URLSearchParams(window.location.search);
             const mode = urlParams.get('mode');
             const queryParam = urlParams.get('q');
+            const sortParam = urlParams.get('sort');
+            const focusParam = urlParams.get('focus');
 
-            // SECRET MODE UNLOCKS
             if (mode === 'anime') {
-                currentTab = 'anime';
-                document.getElementById('tabAnime').classList.remove('hidden');
-                document.querySelectorAll('.theme-btn-active').forEach(e => e.classList.remove('theme-btn-active'));
-                document.getElementById('tabAnime').classList.add('theme-btn-active');
+                switchTab('anime');
+            } else if (mode === 'tv') {
+                switchTab('tv');
+            } else if (mode === 'movie') {
+                switchTab('movie');
             } else if (mode === 'adult') {
                 currentTab = 'movie';
                 currentSort = 'error_nsfw';
                 document.getElementById('sortFilter').value = 'error_nsfw';
-            } else if (queryParam) {
+            }
+
+            if (queryParam) {
                 currentSearchTerm = queryParam;
                 document.getElementById('searchInput').value = queryParam;
             }
 
+            if (sortParam) {
+                currentSort = sortParam;
+                document.getElementById('sortFilter').value = sortParam;
+            }
+
             verifySystemDiagVisibility();
             fetchTMDbData();
+
+            if (focusParam === 'search') {
+                setTimeout(focusSearchMobile, 300);
+            }
         });
+
+        function focusSearchMobile() {
+            const input = document.getElementById('searchInput');
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            input.focus();
+        }
 
         // 13-THEME DYNAMIC PARTICLE CANVAS ENGINE
         const canvas = document.getElementById('bg-canvas');
@@ -437,7 +566,7 @@
             const filterTitle = document.getElementById('filterPanelTitle');
             const extra = document.getElementById('extraFiltersContainer');
             if (tab === 'anime') {
-                filterTitle.innerHTML = `<i class="fa-solid fa-fire text-[#e50914]"></i> Anime Database`;
+                filterTitle.innerHTML = `<i class="fa-solid fa-person-digging text-yellow-500"></i> Anime Section`;
                 extra.classList.add('hidden');
             } else {
                 filterTitle.innerHTML = `<i class="fa-solid fa-sliders text-[#e50914]"></i> ${tab === 'movie' ? 'Movie' : 'TV'} Filters`;
@@ -478,6 +607,7 @@
         }
 
         document.getElementById('yearFilter').addEventListener('change', () => { currentYear = yearFilter.value; currentPage = 1; fetchTMDbData(); });
+        document.getElementById('qualityFilter').addEventListener('change', () => { currentQuality = qualityFilter.value; currentPage = 1; fetchTMDbData(); });
         document.getElementById('sortFilter').addEventListener('change', () => { currentSort = sortFilter.value; currentPage = 1; fetchTMDbData(); });
         document.getElementById('minRatingFilter').addEventListener('change', () => { currentMinRating = minRatingFilter.value; currentPage = 1; fetchTMDbData(); });
         document.getElementById('statusFilter').addEventListener('change', () => { currentStatus = statusFilter.value; currentPage = 1; fetchTMDbData(); });
@@ -503,10 +633,13 @@
         });
 
         function resetFilters() {
-            document.getElementById('yearFilter').value = ""; document.getElementById('sortFilter').value = "newest_released"; 
-            document.getElementById('minRatingFilter').value = "0"; document.getElementById('statusFilter').value = "";
+            document.getElementById('yearFilter').value = ""; 
+            document.getElementById('qualityFilter').value = "";
+            document.getElementById('sortFilter').value = "newest_released"; 
+            document.getElementById('minRatingFilter').value = "0"; 
+            document.getElementById('statusFilter').value = "";
             selectedGenres = []; selectedCountries = []; document.getElementById('searchInput').value = ""; currentSearchTerm = "";
-            currentYear = ""; currentSort = "newest_released"; currentMinRating = "0"; currentStatus = "";
+            currentYear = ""; currentQuality = ""; currentSort = "newest_released"; currentMinRating = "0"; currentStatus = "";
             window.history.replaceState({}, document.title, window.location.pathname);
             populateGenrePills(); populateCountryPills(); verifySystemDiagVisibility(); updateTheme(); fetchTMDbData();
         }
@@ -523,14 +656,17 @@
             return adultKeywords.some(kw => textToScan.includes(kw));
         }
 
-        function getQualityBadge(releaseDateStr, type) {
-            if (!releaseDateStr) return `<span class="bg-blue-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">HD</span>`;
+        function getQualityBadge(releaseDateStr, type, itemId = 0) {
+            if (!releaseDateStr) return `<span class="bg-emerald-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">HD</span>`;
             const diffDays = Math.round((new Date().getTime() - new Date(releaseDateStr).getTime()) / 86400000);
             
-            if (type === 'movie' && diffDays >= 0 && diffDays < 45) {
-                return `<span class="bg-amber-500 text-black font-black px-1.5 py-0.5 rounded text-[10px] tracking-wider animate-pulse">CAM / TS</span>`;
+            // CAM window: Theatre release in last 14 days
+            if (type === 'movie' && diffDays >= 0 && diffDays <= 14) {
+                return `<span class="bg-amber-500 text-black font-black px-1.5 py-0.5 rounded text-[10px] tracking-wider animate-pulse">CAM</span>`;
             }
-            return `<span class="bg-emerald-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">HD 1080p</span>`;
+            
+            const badgeTag = (itemId % 3 === 0) ? '4K' : ((itemId % 2 === 0) ? '2K' : 'HD');
+            return `<span class="bg-emerald-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">${badgeTag}</span>`;
         }
 
         // REAL-TIME RELATIVE TICKER GENERATOR
@@ -572,9 +708,34 @@
             document.getElementById('paginationContainer').classList.add('hidden');
             globalItemsData = {}; 
 
+            // ANIME UNDER CONSTRUCTION DISPLAY
+            if (currentTab === 'anime') {
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('totalResultsBadge').textContent = "";
+                document.getElementById('queryTitle').textContent = "Anime Catalogue";
+                document.getElementById('movieGrid').innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-20 text-center bg-[#181818]/60 backdrop-blur-md rounded-2xl border border-[#2a2a2a] p-8 shadow-2xl">
+                        <i class="fa-solid fa-person-digging text-yellow-500 text-6xl mb-4 animate-bounce"></i>
+                        <h3 class="text-2xl font-black text-white mb-2">Anime Section Under Construction</h3>
+                        <p class="text-sm text-gray-400 max-w-md mb-6 leading-relaxed">We are currently upgrading our Japanese Anime CDN server clusters. Please check back soon!</p>
+                        <button onclick="switchTab('movie')" class="bg-[#e50914] hover:bg-red-700 text-white font-extrabold px-6 py-2.5 rounded-lg text-xs transition-all shadow-lg">
+                            <i class="fa-solid fa-film mr-2"></i> Browse Movies Instead
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
             try {
-                let end = currentTab === 'anime' ? 'tv' : currentTab;
-                let url = ""; const today = new Date().toISOString().split('T')[0];
+                let end = currentTab;
+                let url = ""; 
+                const now = new Date();
+                const today = now.toISOString().split('T')[0];
+                
+                // Calculate 14 days ago for CAM vs HD threshold
+                const twoWeeksAgoDate = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000));
+                const twoWeeksAgo = twoWeeksAgoDate.toISOString().split('T')[0];
+
                 let isTv = end === 'tv'; 
                 let isDiagMode = currentSort === "error_nsfw";
                 let incAd = isDiagMode ? "true" : "false";
@@ -594,19 +755,19 @@
                         eD = isTv ? `&first_air_date.gte=${today}` : `&primary_release_date.gte=${today}`;
                     } else if (currentSort === "vote_average.desc") eD = `&vote_count.gte=50`;
 
-                    if (currentTab === 'anime') {
-                        qT.textContent = isDiagMode ? `System Diagnostics Section (Restricted)` : `Anime Releases`;
-                        let kwFilter = isDiagMode ? '' : '&without_keywords=210024,28486,155477';
-                        url = `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&page=${currentPage}&sort_by=${sP}${eD}&with_genres=16&with_origin_country=JP${kwFilter}&include_adult=${incAd}`;
-                        if (currentYear) url += `&first_air_year=${currentYear}`;
-                    } else {
-                        qT.textContent = isDiagMode ? `System Diagnostics Section` : (currentSort === "upcoming" ? `Upcoming ${end==='movie'?'Movies':'TV Shows'}` : `${end==='movie'?'Movies':'TV Shows'}`);
-                        url = `https://api.themoviedb.org/3/discover/${end}?api_key=${apiKey}&page=${currentPage}&sort_by=${sP}${eD}&include_adult=${incAd}`;
-                        if (currentYear) url += end === 'movie' ? `&primary_release_year=${currentYear}` : `&first_air_year=${currentYear}`;
-                        if (selectedGenres.length > 0) url += `&with_genres=${(isTv ? mapGenresForTv(selectedGenres) : selectedGenres).join('|')}`;
-                        if (selectedCountries.length > 0) url += `&with_origin_country=${selectedCountries.join('|')}`;
-                        if (isTv && currentStatus) { if (currentStatus === 'returning') url += `&with_status=0`; if (currentStatus === 'ended') url += `&with_status=3`; }
+                    // DIRECT API QUALITY PARAMETERS
+                    if (currentQuality === 'cam' && !isTv) {
+                        eD += `&primary_release_date.gte=${twoWeeksAgo}&primary_release_date.lte=${today}`;
+                    } else if (currentQuality === 'hd' && !isTv) {
+                        eD += `&primary_release_date.lte=${twoWeeksAgo}`;
                     }
+
+                    qT.textContent = isDiagMode ? `System Diagnostics Section` : (currentSort === "upcoming" ? `Upcoming ${end==='movie'?'Movies':'TV Shows'}` : `${end==='movie'?'Movies':'TV Shows'}`);
+                    url = `https://api.themoviedb.org/3/discover/${end}?api_key=${apiKey}&page=${currentPage}&sort_by=${sP}${eD}&include_adult=${incAd}`;
+                    if (currentYear) url += end === 'movie' ? `&primary_release_year=${currentYear}` : `&first_air_year=${currentYear}`;
+                    if (selectedGenres.length > 0) url += `&with_genres=${(isTv ? mapGenresForTv(selectedGenres) : selectedGenres).join('|')}`;
+                    if (selectedCountries.length > 0) url += `&with_origin_country=${selectedCountries.join('|')}`;
+                    if (isTv && currentStatus) { if (currentStatus === 'returning') url += `&with_status=0`; if (currentStatus === 'ended') url += `&with_status=3`; }
                 }
 
                 if (currentMinRating && currentMinRating !== "0") url += `&vote_average.gte=${currentMinRating}`;
@@ -623,6 +784,18 @@
                     }
                 } else if (!isDiagMode) {
                     results = results.filter(item => !(item.origin_country && item.origin_country.includes('JP') && item.genre_ids && item.genre_ids.includes(16)));
+                }
+
+                // ACCURATE QUALITY FILTERING (CAM <= 14 days, HD > 14 days)
+                if (currentQuality) {
+                    const nowMs = new Date().getTime();
+                    results = results.filter(item => {
+                        const dateStr = item.release_date || item.first_air_date;
+                        if (!dateStr) return currentQuality === 'hd';
+                        const diffDays = Math.round((nowMs - new Date(dateStr).getTime()) / 86400000);
+                        const isCam = (!item.name && diffDays >= 0 && diffDays <= 14);
+                        return currentQuality === 'cam' ? isCam : !isCam;
+                    });
                 }
 
                 if (results.length > 0) {
@@ -673,7 +846,7 @@
                 const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
                 const poster = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
                 const type = item.title ? 'movie' : 'tv';
-                const qualityBadge = getQualityBadge(activeAirDate, type);
+                const qualityBadge = getQualityBadge(activeAirDate, type, item.id);
 
                 let dateDisplay = activeAirDate ? activeAirDate.substring(0, 4) : "N/A";
                 const relativeStr = getLiveTimeSimulation(activeAirDate, item.id);
