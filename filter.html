@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rash TV - Modern Streaming Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #141414; /* Dark Cinematic */
+            color: #e5e5e5;
+            overflow-x: hidden;
+        }
+
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            background: #141414;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+        }
+        .splash-fade {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #141414; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        .ep-scroll::-webkit-scrollbar { width: 4px; }
+        .ep-scroll::-webkit-scrollbar-track { background: transparent; }
+        .ep-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+
+        .glass-nav {
+            background: linear-gradient(to bottom, rgba(20,20,20,0.95) 0%, rgba(20,20,20,0.8) 100%);
+            backdrop-filter: blur(10px);
+        }
+
+        .movie-card {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+            position: relative;
+        }
+
+        .movie-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        .gradient-overlay {
+            background: linear-gradient(to top, #141414 0%, rgba(20,20,20,0.6) 40%, transparent 100%);
+        }
+
+        #hoverPopout {
+            transition: opacity 0.2s ease;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.95);
+            z-index: 9999;
+            background: #181818;
+            border: 1px solid #333;
+        }
+
+        .theme-btn-active {
+            background-color: #e50914 !important; 
+            color: white !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
+            border-color: #e50914 !important;
+        }
+
+        .pill-active {
+            background-color: #e50914 !important;
+            color: white !important;
+            border-color: #e50914 !important;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -1; pointer-events: none; opacity: 0.75;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <div id="splash-screen">
+        <div class="text-[#e50914] text-5xl md:text-7xl font-black tracking-tighter mb-4 animate-pulse">
+            Rash <span class="text-white">TV</span>
+        </div>
+        <div class="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin shadow-[0_0_15px_#e50914]"></div>
+    </div>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <header class="glass-nav sticky top-0 z-40 px-6 py-4 shadow-2xl border-b border-[#222]">
+        <div class="max-w-[1400px] mx-auto flex flex-col md:flex-row items-center justify-between gap-5">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="text-[#e50914] text-3xl font-black tracking-tighter hover:scale-105 transition-transform">
+                    Rash <span class="text-white">TV</span>
+                </a>
+            </div>
+
+            <div class="flex bg-[#000] border border-[#333] rounded-full p-1 w-full sm:w-auto overflow-x-auto hide-scroll">
+                <button onclick="switchTab('movie')" id="tabMovie" class="px-5 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all theme-btn-active">Movies</button>
+                <button onclick="switchTab('tv')" id="tabTv" class="px-5 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all">TV Shows</button>
+                <button onclick="switchTab('anime')" id="tabAnime" class="px-5 py-2 rounded-full text-sm font-medium text-gray-400 hover:text-white transition-all hidden"><i class="fa-solid fa-fire mr-1"></i> Anime</button>
+            </div>
+
+            <div class="relative w-full sm:w-80">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                <input type="text" id="searchInput" placeholder="Search titles, K-dramas, series..." 
+                    class="w-full bg-[#222] border border-[#333] rounded-full pl-11 pr-4 py-2 text-sm text-white focus:outline-none focus:border-[#e50914] transition-all shadow-inner placeholder-gray-500">
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-[1400px] w-full mx-auto px-6 py-8 relative z-10">
+        
+        <div class="bg-[#181818]/90 backdrop-blur-md rounded-xl p-5 mb-8 border border-[#2a2a2a] flex flex-col gap-5 shadow-lg">
+            <div class="flex items-center justify-between border-b border-[#2a2a2a] pb-3">
+                <div class="flex items-center gap-2 text-sm font-bold text-gray-200" id="filterPanelTitle">
+                    <i class="fa-solid fa-sliders text-[#e50914]"></i> Discover Filters
+                </div>
+                <button onclick="resetFilters()" class="text-xs text-gray-500 hover:text-white transition-colors underline">Clear Filters</button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Release Year</label>
+                    <select id="yearFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]">
+                        <option value="">All Years</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort By</label>
+                    <select id="sortFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]">
+                        <option value="newest_released">Latest (Strict Newest First)</option>
+                        <option value="upcoming">Coming Soon / Upcoming</option>
+                        <option value="popularity.desc">Most Popular Globally</option>
+                        <option value="vote_average.desc">Highest Rated</option>
+                        <option value="error_nsfw" id="sysDiagOption" class="text-gray-400 bg-[#222] hidden">System Diagnostics</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Min Rating</label>
+                    <select id="minRatingFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]">
+                        <option value="0">Any Rating</option>
+                        <option value="7">7.0+ (Good)</option>
+                        <option value="8">8.0+ (Great)</option>
+                        <option value="9">9.0+ (Masterpiece)</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</label>
+                    <select id="statusFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]">
+                        <option value="">All</option>
+                        <option value="returning">Ongoing</option>
+                        <option value="ended">Completed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="extraFiltersContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-3 border-t border-[#2a2a2a]">
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Genres</label>
+                    <div id="genreContainer" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1 ep-scroll"></div>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Origin Country</label>
+                    <div id="countryContainer" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1 ep-scroll"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-end justify-between gap-4 mb-6">
+            <h2 id="queryTitle" class="text-2xl font-bold text-white tracking-tight">Discover</h2>
+            <div id="totalResultsBadge" class="text-sm text-gray-400 font-medium"></div>
+        </div>
+
+        <div id="movieGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8"></div>
+
+        <div id="loader" class="hidden flex flex-col items-center justify-center py-24">
+            <div class="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin mb-4 shadow-[0_0_15px_#e50914]"></div>
+            <p class="text-sm font-medium text-gray-400 tracking-widest uppercase">Fetching Catalogue...</p>
+        </div>
+
+        <div id="paginationContainer" class="flex flex-wrap items-center justify-center gap-2 mt-16 hidden"></div>
+    </main>
+
+    <div id="hoverPopout" class="fixed w-80 rounded-xl overflow-hidden text-white pointer-events-none opacity-0 flex-col hidden"></div>
+
+    <div id="detailModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
+        <div class="bg-[#181818] max-w-4xl w-full rounded-2xl relative border border-[#333] shadow-2xl flex flex-col md:flex-row overflow-hidden">
+            <button onclick="closeModal()" class="absolute top-4 right-4 z-10 text-gray-400 hover:text-white bg-black/50 backdrop-blur-md p-2 rounded-full w-10 h-10 flex items-center justify-center transition-all border border-[#333]">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div id="modalContent" class="flex flex-col md:flex-row w-full h-full"></div>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = "8275056f6ced29fa22cc9fcdb7d41d86";
+        const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+        const IMAGE_ORIGINAL_URL = "https://image.tmdb.org/t/p/original";
+
+        let currentTab = "movie"; 
+        let currentYear = "";
+        let currentSort = "newest_released";
+        let currentMinRating = "0";
+        let currentStatus = "";
+        let currentSearchTerm = "";
+        let selectedGenres = [];
+        let selectedCountries = [];
+
+        let currentPage = 1;
+        let totalResultsCount = 0;
+        let totalPagesCount = 0;
+        let debounceTimer = null;
+        let globalItemsData = {};
+
+        const GENRES_MAP = {
+            28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy", 80: "Crime", 
+            99: "Documentary", 18: "Drama", 10751: "Family", 14: "Fantasy", 36: "History", 
+            27: "Horror", 10402: "Music", 9648: "Mystery", 10749: "Romance", 878: "Sci-Fi", 
+            53: "Thriller", 10752: "War"
+        };
+
+        const COUNTRIES_LIST = [
+            { code: "KR", name: "South Korea (K-Dramas)" },
+            { code: "JP", name: "Japan" },
+            { code: "US", name: "USA" },
+            { code: "GB", name: "UK" },
+            { code: "CN", name: "China" },
+            { code: "IN", name: "India" },
+            { code: "FR", name: "France" }
+        ];
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('splash-fade');
+                setTimeout(() => document.getElementById('splash-screen').style.display = 'none', 800);
+            }, 500);
+
+            populateYearDropdown();
+            populateGenrePills();
+            populateCountryPills();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+            const queryParam = urlParams.get('q');
+
+            // SECRET MODE UNLOCKS
+            if (mode === 'anime') {
+                currentTab = 'anime';
+                document.getElementById('tabAnime').classList.remove('hidden');
+                document.querySelectorAll('.theme-btn-active').forEach(e => e.classList.remove('theme-btn-active'));
+                document.getElementById('tabAnime').classList.add('theme-btn-active');
+            } else if (mode === 'adult') {
+                currentTab = 'movie';
+                currentSort = 'error_nsfw';
+                document.getElementById('sortFilter').value = 'error_nsfw';
+            } else if (queryParam) {
+                currentSearchTerm = queryParam;
+                document.getElementById('searchInput').value = queryParam;
+            }
+
+            verifySystemDiagVisibility();
+            fetchTMDbData();
+        });
+
+        // 13-THEME DYNAMIC PARTICLE CANVAS ENGINE
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let currentTheme = 'dust';
+
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+        class Particle {
+            constructor(theme) { this.theme = theme; this.reset(); this.y = Math.random() * canvas.height; }
+            reset() {
+                this.x = Math.random() * canvas.width; this.angle = Math.random() * Math.PI * 2;
+                if (this.theme === 'dust') {
+                    this.y = Math.random() * canvas.height; this.size = Math.random() * 3 + 1;
+                    this.speedY = Math.random() * 1 + 0.2; this.speedX = (Math.random() - 0.5) * 1;
+                    this.opacity = Math.random() * 0.4 + 0.1; this.spin = (Math.random() - 0.5) * 0.1;
+                } else if (this.theme === 'sakura') {
+                    this.y = -50; this.size = Math.random() * 5 + 4;
+                    this.speedY = Math.random() * 2 + 1; this.speedX = Math.random() * 2 + 1;
+                    this.opacity = Math.random() * 0.5 + 0.3; this.spin = (Math.random() - 0.5) * 0.1;
+                } else if (this.theme === 'hearts') {
+                    this.y = canvas.height + 50; this.size = Math.random() * 8 + 6;
+                    this.speedY = -(Math.random() * 1.5 + 0.5); this.speedX = (Math.random() - 0.5) * 1;
+                    this.opacity = Math.random() * 0.4 + 0.2; this.spin = (Math.random() - 0.5) * 0.05;
+                } else if (this.theme === 'horror') {
+                    this.y = Math.random() * canvas.height; this.size = Math.random() * 160 + 60; 
+                    this.speedY = (Math.random() - 0.5) * 0.4; this.speedX = (Math.random() - 0.5) * 0.8;
+                    this.opacity = Math.random() * 0.06 + 0.02; this.spin = 0;
+                } else if (this.theme === 'action') {
+                    this.y = canvas.height + 50; this.size = Math.random() * 3.5 + 1;
+                    this.speedY = -(Math.random() * 4 + 2); this.speedX = (Math.random() - 0.5) * 2;
+                    this.opacity = Math.random() * 0.8 + 0.2; this.spin = 0;
+                } else if (this.theme === 'scifi') {
+                    this.x = canvas.width / 2; this.y = canvas.height / 2;
+                    this.size = Math.random() * 2 + 1; const speed = Math.random() * 5 + 2;
+                    this.speedX = Math.cos(this.angle) * speed; this.speedY = Math.sin(this.angle) * speed;
+                    this.opacity = 0; this.spin = 0;
+                } else if (this.theme === 'fantasy') {
+                    this.y = canvas.height + 50; this.size = Math.random() * 15 + 5;
+                    this.speedY = -(Math.random() * 1 + 0.2); this.speedX = Math.sin(this.y * 0.01) * 2;
+                    this.opacity = Math.random() * 0.3 + 0.1; this.color = Math.random() > 0.5 ? '#a855f7' : '#3b82f6'; this.spin = 0;
+                } else if (this.theme === 'adventure') {
+                    this.y = -20; this.size = Math.random() * 6 + 3;
+                    this.speedY = Math.random() * 1.5 + 0.8; this.speedX = Math.random() * 1.5 + 0.5;
+                    this.opacity = Math.random() * 0.5 + 0.2; this.spin = (Math.random() - 0.5) * 0.08;
+                } else if (this.theme === 'music') {
+                    this.y = canvas.height + 30; this.size = Math.random() * 14 + 10;
+                    this.speedY = -(Math.random() * 1.2 + 0.5); this.speedX = Math.sin(this.y * 0.02) * 1.5;
+                    this.opacity = Math.random() * 0.5 + 0.3; this.noteChar = ['♪', '♫', '♬'][Math.floor(Math.random() * 3)];
+                    this.spin = (Math.random() - 0.5) * 0.02;
+                } else if (this.theme === 'rain') {
+                    this.y = -50; this.size = Math.random() * 15 + 10;
+                    this.speedY = Math.random() * 8 + 12; this.speedX = -1;
+                    this.opacity = Math.random() * 0.4 + 0.1; this.spin = 0;
+                } else if (this.theme === 'bubbles') {
+                    this.y = canvas.height + 40; this.size = Math.random() * 18 + 6;
+                    this.speedY = -(Math.random() * 1 + 0.3); this.speedX = (Math.random() - 0.5) * 1;
+                    this.opacity = Math.random() * 0.4 + 0.15; this.color = ['#38bdf8', '#f472b6', '#a78bfa', '#34d399'][Math.floor(Math.random() * 4)];
+                    this.spin = 0;
+                } else if (this.theme === 'mystery') {
+                    this.y = Math.random() * canvas.height; this.size = Math.random() * 140 + 50;
+                    this.speedY = (Math.random() - 0.5) * 0.5; this.speedX = (Math.random() - 0.5) * 0.5;
+                    this.opacity = Math.random() * 0.05 + 0.02; this.spin = 0;
+                } else if (this.theme === 'comedy') {
+                    this.y = Math.random() * canvas.height; this.size = Math.random() * 6 + 4;
+                    this.speedY = -(Math.random() * 0.8 + 0.2); this.speedX = (Math.random() - 0.5) * 0.8;
+                    this.opacity = Math.random() * 0.7 + 0.2; this.spin = (Math.random() - 0.5) * 0.1;
+                }
+            }
+            update() {
+                if (this.theme === 'fantasy' || this.theme === 'music') this.speedX = Math.sin(this.y * 0.02) * 1.5;
+                this.x += this.speedX; this.y += this.speedY; this.angle += this.spin;
+                if (this.theme === 'scifi') { this.speedX *= 1.05; this.speedY *= 1.05; this.opacity += 0.05; }
+                if (this.theme === 'dust' || this.theme === 'horror' || this.theme === 'mystery') {
+                    if (this.y < -300 || this.y > canvas.height + 300 || this.x < -300 || this.x > canvas.width + 300) this.reset();
+                } else if (this.theme === 'sakura' || this.theme === 'adventure') {
+                    if (this.y > canvas.height + 30 || this.x > canvas.width + 30) this.reset();
+                } else if (this.theme === 'rain') {
+                    if (this.y > canvas.height + 50) this.reset();
+                } else if (['hearts', 'action', 'fantasy', 'music', 'bubbles', 'comedy'].includes(this.theme)) {
+                    if (this.y < -30) this.reset();
+                } else if (this.theme === 'scifi') {
+                    if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+                }
+            }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.globalAlpha = Math.min(this.opacity, 1);
+                if (this.theme === 'dust') { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.fill();
+                } else if (this.theme === 'sakura') { ctx.fillStyle = '#ffb7c5'; ctx.beginPath(); ctx.ellipse(0, 0, this.size, this.size/2, 0, 0, Math.PI * 2); ctx.fill();
+                } else if (this.theme === 'hearts') { ctx.fillStyle = '#e50914'; ctx.beginPath(); let w = this.size, h = this.size; ctx.moveTo(0, h/4); ctx.bezierCurveTo(0, 0, -w/2, 0, -w/2, h/4); ctx.bezierCurveTo(-w/2, h/2, 0, h*3/4, 0, h); ctx.bezierCurveTo(0, h*3/4, w/2, h/2, w/2, h/4); ctx.bezierCurveTo(w/2, 0, 0, 0, 0, h/4); ctx.fill();
+                } else if (this.theme === 'horror') { const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size); grad.addColorStop(0, `rgba(30, 70, 90, 0.8)`); grad.addColorStop(1, 'rgba(30, 70, 90, 0)'); ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.fill();
+                } else if (this.theme === 'mystery') { const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size); grad.addColorStop(0, `rgba(126, 34, 206, 0.8)`); grad.addColorStop(1, 'rgba(126, 34, 206, 0)'); ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.fill();
+                } else if (this.theme === 'action') { ctx.fillStyle = '#fb923c'; ctx.shadowBlur = 10; ctx.shadowColor = '#f97316'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.fill();
+                } else if (this.theme === 'scifi') { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-this.speedX*2, -this.speedY*2); ctx.strokeStyle = '#fff'; ctx.lineWidth = this.size; ctx.stroke();
+                } else if (this.theme === 'fantasy') { ctx.fillStyle = this.color; ctx.shadowBlur = 20; ctx.shadowColor = this.color; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.fill();
+                } else if (this.theme === 'adventure') { ctx.fillStyle = '#eab308'; ctx.beginPath(); ctx.ellipse(0, 0, this.size, this.size/2, 0, 0, Math.PI * 2); ctx.fill();
+                } else if (this.theme === 'music') { ctx.fillStyle = '#ec4899'; ctx.font = `${this.size}px sans-serif`; ctx.fillText(this.noteChar, 0, 0);
+                } else if (this.theme === 'rain') { ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-1, this.size); ctx.stroke();
+                } else if (this.theme === 'bubbles') { ctx.strokeStyle = this.color; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.stroke();
+                } else if (this.theme === 'comedy') { ctx.fillStyle = '#facc15'; ctx.shadowBlur = 10; ctx.shadowColor = '#facc15'; ctx.beginPath(); for (let i = 0; i < 5; i++) { ctx.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * this.size, -Math.sin((18 + i * 72) * Math.PI / 180) * this.size); ctx.lineTo(Math.cos((54 + i * 72) * Math.PI / 180) * (this.size/2), -Math.sin((54 + i * 72) * Math.PI / 180) * (this.size/2)); } ctx.closePath(); ctx.fill(); }
+                ctx.restore();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            let count = 50; 
+            if (currentTheme === 'horror' || currentTheme === 'mystery') count = 20;
+            else if (currentTheme === 'scifi') count = 140;
+            else if (currentTheme === 'action') count = 60;
+            else if (currentTheme === 'rain') count = 80;
+            for (let i = 0; i < count; i++) particles.push(new Particle(currentTheme));
+        }
+
+        function animateParticles() {
+            if (currentTheme === 'horror') { ctx.fillStyle = 'rgba(10, 15, 20, 0.3)'; ctx.fillRect(0, 0, canvas.width, canvas.height); } 
+            else if (currentTheme === 'mystery') { ctx.fillStyle = 'rgba(20, 10, 30, 0.3)'; ctx.fillRect(0, 0, canvas.width, canvas.height); } 
+            else { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateParticles);
+        }
+        initParticles(); animateParticles();
+
+        function updateTheme() {
+            let newTheme = 'dust';
+            if (currentTab === 'anime') newTheme = 'sakura';
+            else {
+                if (selectedGenres.includes("27")) newTheme = 'horror';       
+                else if (selectedGenres.includes("10749")) newTheme = 'hearts'; 
+                else if (selectedGenres.includes("878")) newTheme = 'scifi';   
+                else if (selectedGenres.includes("28")) newTheme = 'action';   
+                else if (selectedGenres.includes("14")) newTheme = 'fantasy';  
+                else if (selectedGenres.includes("12")) newTheme = 'adventure';
+                else if (selectedGenres.includes("10402")) newTheme = 'music'; 
+                else if (selectedGenres.includes("80") || selectedGenres.includes("18")) newTheme = 'rain'; 
+                else if (selectedGenres.includes("16") || selectedGenres.includes("10751")) newTheme = 'bubbles'; 
+                else if (selectedGenres.includes("9648")) newTheme = 'mystery';
+                else if (selectedGenres.includes("35")) newTheme = 'comedy';   
+            }
+            if (newTheme !== currentTheme) { currentTheme = newTheme; initParticles(); }
+        }
+
+        function verifySystemDiagVisibility() {
+            const sysDiagOption = document.getElementById('sysDiagOption');
+            if (currentTab === 'movie' || currentTab === 'tv') {
+                sysDiagOption.classList.add('hidden');
+            } else sysDiagOption.classList.remove('hidden');
+        }
+
+        function switchTab(tab) {
+            currentTab = tab; currentPage = 1; document.getElementById('searchInput').value = ""; currentSearchTerm = "";
+            document.querySelectorAll('.theme-btn-active').forEach(e => e.classList.remove('theme-btn-active'));
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('theme-btn-active');
+            
+            const filterTitle = document.getElementById('filterPanelTitle');
+            const extra = document.getElementById('extraFiltersContainer');
+            if (tab === 'anime') {
+                filterTitle.innerHTML = `<i class="fa-solid fa-fire text-[#e50914]"></i> Anime Database`;
+                extra.classList.add('hidden');
+            } else {
+                filterTitle.innerHTML = `<i class="fa-solid fa-sliders text-[#e50914]"></i> ${tab === 'movie' ? 'Movie' : 'TV'} Filters`;
+                extra.classList.remove('hidden');
+            }
+            verifySystemDiagVisibility(); updateTheme(); fetchTMDbData();
+        }
+
+        function populateYearDropdown() {
+            const yearFilter = document.getElementById('yearFilter');
+            for (let y = new Date().getFullYear(); y >= 1930; y--) {
+                const opt = document.createElement('option'); opt.value = y; opt.textContent = y; yearFilter.appendChild(opt);
+            }
+        }
+
+        function createPill(id, name, container, stateArray, callback) {
+            const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = name;
+            btn.className = `px-3 py-1.5 rounded-full text-xs font-semibold border transition-all bg-[#222] border-[#333] text-gray-300 hover:border-gray-500 whitespace-nowrap`;
+            btn.onclick = () => {
+                const idx = stateArray.indexOf(id);
+                if (idx > -1) { stateArray.splice(idx, 1); btn.classList.remove('pill-active'); } 
+                else { stateArray.push(id); btn.classList.add('pill-active'); }
+                updateTheme(); callback();
+            };
+            container.appendChild(btn);
+        }
+
+        function populateGenrePills() {
+            const container = document.getElementById('genreContainer');
+            container.innerHTML = '';
+            Object.entries(GENRES_MAP).forEach(([id, name]) => createPill(id, name, container, selectedGenres, () => { currentPage = 1; fetchTMDbData(); }));
+        }
+
+        function populateCountryPills() {
+            const container = document.getElementById('countryContainer');
+            container.innerHTML = '';
+            COUNTRIES_LIST.forEach(country => createPill(country.code, country.name, container, selectedCountries, () => { currentPage = 1; fetchTMDbData(); }));
+        }
+
+        document.getElementById('yearFilter').addEventListener('change', () => { currentYear = yearFilter.value; currentPage = 1; fetchTMDbData(); });
+        document.getElementById('sortFilter').addEventListener('change', () => { currentSort = sortFilter.value; currentPage = 1; fetchTMDbData(); });
+        document.getElementById('minRatingFilter').addEventListener('change', () => { currentMinRating = minRatingFilter.value; currentPage = 1; fetchTMDbData(); });
+        document.getElementById('statusFilter').addEventListener('change', () => { currentStatus = statusFilter.value; currentPage = 1; fetchTMDbData(); });
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const val = e.target.value.trim().toLowerCase();
+            
+            // SECRET UNLOCK TRIGGERS
+            if (val === '$animes$' || val === '"$animes$"' || val === 'animes') {
+                switchTab('anime');
+                document.getElementById('tabAnime').classList.remove('hidden');
+                return;
+            }
+            if (val === '$adult$' || val === '"$adult$"' || val === 'adult') {
+                currentSort = 'error_nsfw';
+                document.getElementById('sortFilter').value = 'error_nsfw';
+                fetchTMDbData();
+                return;
+            }
+
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => { currentSearchTerm = e.target.value.trim(); currentPage = 1; fetchTMDbData(); }, 500);
+        });
+
+        function resetFilters() {
+            document.getElementById('yearFilter').value = ""; document.getElementById('sortFilter').value = "newest_released"; 
+            document.getElementById('minRatingFilter').value = "0"; document.getElementById('statusFilter').value = "";
+            selectedGenres = []; selectedCountries = []; document.getElementById('searchInput').value = ""; currentSearchTerm = "";
+            currentYear = ""; currentSort = "newest_released"; currentMinRating = "0"; currentStatus = "";
+            window.history.replaceState({}, document.title, window.location.pathname);
+            populateGenrePills(); populateCountryPills(); verifySystemDiagVisibility(); updateTheme(); fetchTMDbData();
+        }
+
+        function mapGenresForTv(genresArray) {
+            const tvMap = { '28':'10759', '12':'10759', '14':'10765', '36':'18', '27':'9648', '10402':'18', '10749':'18', '878':'10765', '53':'80', '10752':'10768' };
+            return [...new Set(genresArray.map(g => tvMap[g] || g))];
+        }
+
+        function isAdultAnimeItem(item) {
+            if (item.adult) return true;
+            const textToScan = ((item.title || "") + " " + (item.name || "") + " " + (item.original_title || "") + " " + (item.original_name || "") + " " + (item.overview || "")).toLowerCase();
+            const adultKeywords = ['hentai', 'uncensored', 'erotica', 'porno', 'sex', '18+', 'ecchi', 'xxx', 'xxxx', 'フラチ', 'ケガレボシ', '無人駅', 'oppai', 'ero', 'sensual', 'r-18', 'adult ova'];
+            return adultKeywords.some(kw => textToScan.includes(kw));
+        }
+
+        function getQualityBadge(releaseDateStr, type) {
+            if (!releaseDateStr) return `<span class="bg-blue-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">HD</span>`;
+            const diffDays = Math.round((new Date().getTime() - new Date(releaseDateStr).getTime()) / 86400000);
+            
+            if (type === 'movie' && diffDays >= 0 && diffDays < 45) {
+                return `<span class="bg-amber-500 text-black font-black px-1.5 py-0.5 rounded text-[10px] tracking-wider animate-pulse">CAM / TS</span>`;
+            }
+            return `<span class="bg-emerald-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">HD 1080p</span>`;
+        }
+
+        // REAL-TIME RELATIVE TICKER GENERATOR
+        function getLiveTimeSimulation(dateStr, itemId) {
+            if (!dateStr) return null;
+            const releaseDate = new Date(dateStr);
+            const now = new Date();
+
+            const rTime = new Date(releaseDate.getFullYear(), releaseDate.getMonth(), releaseDate.getDate()).getTime();
+            const nTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const diffDays = Math.round((nTime - rTime) / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) return "Coming Soon";
+            
+            if (diffDays === 0) {
+                const seed = (itemId % 100); 
+                if (seed < 15) return `<span class="text-green-400 font-bold">${seed + 2} mins ago</span>`;
+                else {
+                    const hrs = (seed % 23) + 1;
+                    return `<span class="text-emerald-400 font-semibold">${hrs} hour${hrs > 1 ? 's' : ''} ago</span>`;
+                }
+            }
+            if (diffDays === 1) return "Yesterday";
+            if (diffDays < 7) return `${diffDays} days ago`;
+            if (diffDays < 30) {
+                const w = Math.floor(diffDays / 7);
+                return w === 1 ? "1 week ago" : `${w} weeks ago`;
+            }
+            if (diffDays < 365) {
+                const m = Math.floor(diffDays / 30);
+                return m === 1 ? "1 month ago" : `${m} months ago`;
+            }
+            return dateStr.substring(0, 4);
+        }
+
+        async function fetchTMDbData() {
+            document.getElementById('loader').classList.remove('hidden'); 
+            document.getElementById('movieGrid').innerHTML = ''; 
+            document.getElementById('paginationContainer').classList.add('hidden');
+            globalItemsData = {}; 
+
+            try {
+                let end = currentTab === 'anime' ? 'tv' : currentTab;
+                let url = ""; const today = new Date().toISOString().split('T')[0];
+                let isTv = end === 'tv'; 
+                let isDiagMode = currentSort === "error_nsfw";
+                let incAd = isDiagMode ? "true" : "false";
+                const qT = document.getElementById('queryTitle');
+                
+                if (currentSearchTerm) {
+                    qT.textContent = isDiagMode ? `Restricted Search: "${currentSearchTerm}"` : `Results for: "${currentSearchTerm}"`;
+                    url = `https://api.themoviedb.org/3/search/${end}?api_key=${apiKey}&query=${encodeURIComponent(currentSearchTerm)}&page=${currentPage}&include_adult=${incAd}`;
+                    if (currentYear) url += end === 'movie' ? `&primary_release_year=${currentYear}` : `&first_air_year=${currentYear}`;
+                } else {
+                    let sP = currentSort; let eD = "";
+                    if (currentSort === "newest_released" || isDiagMode) {
+                        sP = isTv ? `first_air_date.desc` : `primary_release_date.desc`;
+                        eD = isTv ? `&first_air_date.lte=${today}&vote_count.gte=1` : `&primary_release_date.lte=${today}&vote_count.gte=1`;
+                    } else if (currentSort === "upcoming") {
+                        sP = isTv ? `first_air_date.asc` : `primary_release_date.asc`;
+                        eD = isTv ? `&first_air_date.gte=${today}` : `&primary_release_date.gte=${today}`;
+                    } else if (currentSort === "vote_average.desc") eD = `&vote_count.gte=50`;
+
+                    if (currentTab === 'anime') {
+                        qT.textContent = isDiagMode ? `System Diagnostics Section (Restricted)` : `Anime Releases`;
+                        let kwFilter = isDiagMode ? '' : '&without_keywords=210024,28486,155477';
+                        url = `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&page=${currentPage}&sort_by=${sP}${eD}&with_genres=16&with_origin_country=JP${kwFilter}&include_adult=${incAd}`;
+                        if (currentYear) url += `&first_air_year=${currentYear}`;
+                    } else {
+                        qT.textContent = isDiagMode ? `System Diagnostics Section` : (currentSort === "upcoming" ? `Upcoming ${end==='movie'?'Movies':'TV Shows'}` : `${end==='movie'?'Movies':'TV Shows'}`);
+                        url = `https://api.themoviedb.org/3/discover/${end}?api_key=${apiKey}&page=${currentPage}&sort_by=${sP}${eD}&include_adult=${incAd}`;
+                        if (currentYear) url += end === 'movie' ? `&primary_release_year=${currentYear}` : `&first_air_year=${currentYear}`;
+                        if (selectedGenres.length > 0) url += `&with_genres=${(isTv ? mapGenresForTv(selectedGenres) : selectedGenres).join('|')}`;
+                        if (selectedCountries.length > 0) url += `&with_origin_country=${selectedCountries.join('|')}`;
+                        if (isTv && currentStatus) { if (currentStatus === 'returning') url += `&with_status=0`; if (currentStatus === 'ended') url += `&with_status=3`; }
+                    }
+                }
+
+                if (currentMinRating && currentMinRating !== "0") url += `&vote_average.gte=${currentMinRating}`;
+
+                const res = await fetch(url); const data = await res.json();
+                let results = data.results || [];
+
+                // STRICT CLEANING ENGINE
+                if (currentTab === 'anime') {
+                    if (isDiagMode) {
+                        results = results.filter(item => isAdultAnimeItem(item));
+                    } else {
+                        results = results.filter(item => !isAdultAnimeItem(item));
+                    }
+                } else if (!isDiagMode) {
+                    results = results.filter(item => !(item.origin_country && item.origin_country.includes('JP') && item.genre_ids && item.genre_ids.includes(16)));
+                }
+
+                if (results.length > 0) {
+                    totalResultsCount = data.total_results || results.length;
+                    totalPagesCount = Math.min(data.total_pages || 1, 500);
+                    document.getElementById('totalResultsBadge').innerHTML = `<span class="text-[#e50914] font-bold">${results.length}</span> Titles Displayed`;
+
+                    if (isTv) results = await enrichTvEpisodeDates(results);
+                    
+                    results.sort((a, b) => {
+                        const dA = new Date(a.lastAirDate || a.release_date || a.first_air_date || 0).getTime() || 0;
+                        const dB = new Date(b.lastAirDate || b.release_date || b.first_air_date || 0).getTime() || 0;
+                        return dB - dA; 
+                    });
+
+                    renderItems(results, document.getElementById('movieGrid'));
+                    setupPagination();
+                } else {
+                    document.getElementById('totalResultsBadge').textContent = "";
+                    document.getElementById('movieGrid').innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 font-semibold text-lg">No titles found for these filters.</div>`;
+                }
+
+            } catch (e) { console.error(e); } finally { document.getElementById('loader').classList.add('hidden'); }
+        }
+
+        async function enrichTvEpisodeDates(items) {
+            return await Promise.all(items.map(async (item) => {
+                try {
+                    const res = await fetch(`https://api.themoviedb.org/3/tv/${item.id}?api_key=${apiKey}`);
+                    const detail = await res.json();
+                    if (detail.id) {
+                        return { ...item, 
+                            lastAirDate: detail.last_air_date || item.first_air_date, 
+                            latestEpisodeNum: detail.last_episode_to_air ? `Ep ${detail.last_episode_to_air.episode_number}` : '',
+                            status: detail.status || '' 
+                        };
+                    }
+                } catch(e) {}
+                return { ...item, lastAirDate: item.first_air_date, latestEpisodeNum: '' };
+            }));
+        }
+
+        function renderItems(items, container) {
+            items.forEach(item => {
+                globalItemsData[item.id] = item; 
+                const title = item.title || item.name;
+                const activeAirDate = item.lastAirDate || item.release_date || item.first_air_date || "";
+                const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
+                const poster = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
+                const type = item.title ? 'movie' : 'tv';
+                const qualityBadge = getQualityBadge(activeAirDate, type);
+
+                let dateDisplay = activeAirDate ? activeAirDate.substring(0, 4) : "N/A";
+                const relativeStr = getLiveTimeSimulation(activeAirDate, item.id);
+                
+                if (activeAirDate) {
+                    if (relativeStr && (relativeStr.includes('ago') || relativeStr === 'Yesterday' || relativeStr === 'Coming Soon')) {
+                        dateDisplay = item.latestEpisodeNum ? `${item.latestEpisodeNum} &bull; ${relativeStr}` : relativeStr;
+                    } else if (item.latestEpisodeNum) {
+                        dateDisplay = `${item.latestEpisodeNum} (${activeAirDate.substring(0, 4)})`;
+                    } else {
+                        dateDisplay = relativeStr || dateDisplay; 
+                    }
+                }
+
+                const card = document.createElement('div');
+                card.className = "movie-card rounded-md overflow-hidden bg-[#222] cursor-pointer flex flex-col h-full shadow-lg";
+                
+                card.onmouseenter = (e) => showHoverPopout(e.currentTarget, item.id);
+                card.onmouseleave = hideHoverPopout;
+                card.onclick = () => window.location.href = `player.html?id=${item.id}&type=${type}`;
+
+                card.innerHTML = `
+                    <div class="relative aspect-[2/3] w-full bg-[#111]">
+                        <img src="${poster}" class="w-full h-full object-cover" loading="lazy">
+                        <div class="absolute inset-0 gradient-overlay pointer-events-none"></div>
+                        
+                        <div class="absolute top-2 right-2 left-2 z-10 flex items-center justify-between pointer-events-none">
+                            <div>${qualityBadge}</div>
+                            ${rating > 0 ? `<div class="bg-black/80 backdrop-blur-md text-white font-bold px-2 py-1 rounded-md text-[10px] sm:text-xs flex items-center gap-1 border border-[#333]"><i class="fa-solid fa-star text-yellow-500 text-[10px]"></i> ${rating}</div>` : ''}
+                        </div>
+
+                        <div class="absolute bottom-3 left-3 right-3 z-10">
+                            <h3 class="font-bold text-xs sm:text-sm text-white line-clamp-2 leading-tight drop-shadow-md">${title}</h3>
+                            <div class="text-[10px] sm:text-[11px] text-gray-300 mt-1 flex items-center gap-1">${dateDisplay}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // HOVER POPOUT
+        let hoverTimeout;
+        function showHoverPopout(el, id) {
+            clearTimeout(hoverTimeout); const item = globalItemsData[id]; if (!item) return;
+            const pop = document.getElementById('hoverPopout');
+            
+            const title = item.title || item.name;
+            const overview = item.overview ? (item.overview.length > 130 ? item.overview.substring(0, 130) + '...' : item.overview) : 'No synopsis available.';
+            const bg = item.backdrop_path ? `${IMAGE_BASE_URL}${item.backdrop_path}` : (item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : '');
+            const type = item.title ? 'movie' : 'tv';
+
+            pop.innerHTML = `
+                <div class="w-full h-40 bg-[#111] relative shrink-0">
+                    ${bg ? `<img src="${bg}" class="w-full h-full object-cover opacity-80">` : ''}
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#181818] to-transparent"></div>
+                    <div class="absolute bottom-3 left-4 right-4 font-black text-lg leading-tight text-white drop-shadow-lg line-clamp-2">${title}</div>
+                </div>
+                <div class="p-4 flex flex-col gap-3">
+                    <p class="text-xs text-gray-300 line-clamp-3 leading-relaxed">${overview}</p>
+                    <div class="flex gap-2 mt-1">
+                        <button onclick="window.location.href='player.html?id=${item.id}&type=${type}'; event.stopPropagation();" class="flex-1 bg-white hover:bg-gray-200 text-black font-bold py-2 rounded flex items-center justify-center gap-2 text-xs transition-colors">
+                            <i class="fa-solid fa-play"></i> Stream
+                        </button>
+                        <button onclick="fetchItemDetails(${item.id}); event.stopPropagation();" class="w-10 h-8 rounded border border-gray-500 hover:border-white flex items-center justify-center text-gray-300 hover:text-white transition-colors">
+                            <i class="fa-solid fa-info"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            pop.classList.remove('hidden'); pop.style.opacity = '0';
+            requestAnimationFrame(() => {
+                const rect = el.getBoundingClientRect();
+                const pW = pop.offsetWidth || 320; const pH = pop.offsetHeight || 330; 
+                let left = window.innerWidth - rect.right > pW + 20 ? rect.right + 10 : (rect.left > pW + 20 ? rect.left - pW - 10 : window.innerWidth / 2 - pW / 2);
+                let top = rect.top + pH > window.innerHeight ? window.innerHeight - pH - 20 : rect.top;
+                if (top < 20) top = 20;
+                pop.style.left = `${left}px`; pop.style.top = `${top}px`;
+                pop.style.opacity = '1'; pop.style.pointerEvents = 'auto';
+            });
+        }
+        function hideHoverPopout() {
+            const pop = document.getElementById('hoverPopout');
+            hoverTimeout = setTimeout(() => { pop.style.opacity = '0'; pop.style.pointerEvents = 'none'; setTimeout(() => pop.classList.add('hidden'), 200); }, 100);
+        }
+        document.getElementById('hoverPopout').addEventListener('mouseenter', () => clearTimeout(hoverTimeout));
+        document.getElementById('hoverPopout').addEventListener('mouseleave', hideHoverPopout);
+
+        async function fetchItemDetails(id) {
+            hideHoverPopout();
+            document.getElementById('loader').classList.remove('hidden');
+            try {
+                let endType = currentTab === 'anime' ? 'tv' : currentTab;
+                const res = await fetch(`https://api.themoviedb.org/3/${endType}/${id}?api_key=${apiKey}&append_to_response=videos,credits`);
+                const data = await res.json();
+                if (data.id) showModal(data);
+            } catch (err) { console.error(err); } finally { document.getElementById('loader').classList.add('hidden'); }
+        }
+
+        function showModal(item) {
+            const modal = document.getElementById('detailModal');
+            const content = document.getElementById('modalContent');
+            const title = item.title || item.name;
+            const poster = item.poster_path ? `${IMAGE_BASE_URL}${item.poster_path}` : '';
+            const genres = item.genres ? item.genres.map(g => g.name).join(', ') : 'N/A';
+            const type = item.title ? 'movie' : 'tv';
+
+            content.innerHTML = `
+                <div class="w-full md:w-[40%] relative hidden md:block shrink-0 bg-[#111]">
+                    <img src="${poster}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent to-[#181818]"></div>
+                </div>
+                
+                <div class="flex-1 flex flex-col relative p-6 md:p-8">
+                    <h2 class="text-3xl font-black text-white leading-tight mb-3">${title}</h2>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-6">${item.overview || 'No synopsis available.'}</p>
+                    <p class="text-sm mb-6"><span class="text-gray-500">Genres:</span> <span class="text-white">${genres}</span></p>
+
+                    <button onclick="window.location.href='player.html?id=${item.id}&type=${type}'" class="bg-[#e50914] hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg flex items-center justify-center gap-3 transition-colors shadow-lg mt-auto">
+                        <i class="fa-solid fa-play text-xl"></i> Launch Stream Player
+                    </button>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
+
+        function setupPagination() {
+            const paginationContainer = document.getElementById('paginationContainer');
+            paginationContainer.classList.remove('hidden'); paginationContainer.innerHTML = '';
+            if (totalPagesCount <= 1) return;
+            const cBtn = (c, fn, dis, act) => {
+                const b = document.createElement('button'); b.innerHTML = c;
+                b.className = `w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${act ? 'bg-[#e50914] text-white shadow-[0_0_10px_rgba(229,9,20,0.5)] border-none' : dis ? 'bg-[#111] text-gray-600 border border-[#333]' : 'bg-[#222] text-gray-300 hover:bg-[#333] border border-[#333]'}`;
+                b.disabled = dis; if(!dis) b.onclick = fn; return b;
+            };
+            paginationContainer.appendChild(cBtn('<i class="fa-solid fa-chevron-left"></i>', () => goToPage(currentPage - 1), currentPage === 1, false));
+            let pts = [];
+            if (totalPagesCount <= 5) for (let i = 1; i <= totalPagesCount; i++) pts.push(i);
+            else {
+                if (currentPage <= 3) pts = [1, 2, 3, 4, '...', totalPagesCount];
+                else if (currentPage >= totalPagesCount - 2) pts = [1, '...', totalPagesCount - 3, totalPagesCount - 2, totalPagesCount - 1, totalPagesCount];
+                else pts = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPagesCount];
+            }
+            pts.forEach(p => {
+                if (p === '...') { const s = document.createElement('span'); s.textContent = '...'; s.className = 'px-2 text-gray-500 font-bold'; paginationContainer.appendChild(s); } 
+                else paginationContainer.appendChild(cBtn(p, () => goToPage(p), false, p === currentPage));
+            });
+            paginationContainer.appendChild(cBtn('<i class="fa-solid fa-chevron-right"></i>', () => goToPage(currentPage + 1), currentPage >= totalPagesCount, false));
+        }
+
+        function goToPage(p) { if (p < 1 || p > totalPagesCount) return; currentPage = p; fetchTMDbData(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    </script>
+</body>
+</html>

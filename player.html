@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gan TV - Theatre Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #0a0a0a; color: #e5e5e5; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        .ep-scroll::-webkit-scrollbar { width: 4px; }
+        .ep-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        .ambient-glow { filter: blur(100px) saturate(220%) opacity(0.35); transform: scale(1.15); pointer-events: none; }
+        .movie-card { transition: transform 0.3s ease; }
+        .movie-card:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- Ambient Background Glow -->
+    <div id="ambientGlow" class="absolute inset-0 z-0 bg-cover bg-center ambient-glow transition-all duration-1000"></div>
+
+    <!-- Top Navigation Bar -->
+    <header class="relative z-30 px-6 py-4 bg-black/50 backdrop-blur-md border-b border-[#222] flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-semibold">
+            <i class="fa-solid fa-arrow-left"></i> Back to Catalogue
+        </a>
+        <div class="text-[#e50914] text-2xl font-black tracking-tighter">
+            Gan <span class="text-white">TV</span>
+        </div>
+        <a href="filter.html" class="text-xs bg-[#222] hover:bg-[#333] text-gray-300 hover:text-white px-3 py-1.5 rounded-full border border-[#444] transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders text-[#e50914]"></i> Discover
+        </a>
+    </header>
+
+    <!-- Main Theatre Layout -->
+    <main class="flex-1 max-w-[1650px] w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 relative z-10">
+        
+        <!-- LEFT COLUMN: Video Player & Server Selection -->
+        <div class="flex flex-col gap-6">
+            
+            <!-- Video Player Box -->
+            <div class="w-full aspect-video bg-[#000] rounded-2xl overflow-hidden relative shadow-[0_20px_60px_rgba(0,0,0,0.95)] border border-[#333]">
+                <div id="playerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center bg-[#111] z-10">
+                    <div class="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-sm text-gray-400 font-medium tracking-widest uppercase animate-pulse">Connecting to verified stream engine...</p>
+                </div>
+
+                <div id="serverFailoverBanner" class="hidden absolute inset-0 z-30 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+                    <i class="fa-solid fa-triangle-exclamation text-yellow-500 text-4xl mb-3"></i>
+                    <h3 class="text-lg font-bold text-white mb-2">We are extremely sorry for the inconvenience!</h3>
+                    <p class="text-xs text-gray-400 max-w-md mb-5 leading-relaxed">This stream server appears to be offline or blocked. Please switch to another server engine above.</p>
+                    <button onclick="switchNextServer()" class="bg-[#e50914] hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-lg text-xs transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> Try Next Server Engine
+                    </button>
+                </div>
+
+                <iframe id="mainPlayer" class="absolute inset-0 w-full h-full z-20 hidden bg-black" frameborder="0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture; encrypted-media"></iframe>
+            </div>
+
+            <!-- Multi-Server Selector Engine (Clean Active Servers Only) -->
+            <div class="bg-[#141414]/90 backdrop-blur-md p-4 rounded-xl border border-[#2a2a2a] shadow-lg">
+                <div class="flex items-center gap-3 mb-3">
+                    <i class="fa-solid fa-server text-[#e50914]"></i>
+                    <span class="text-xs font-bold text-gray-300 uppercase tracking-widest">Multi-Server Streaming Engines (Verified High-Uptime CDNs)</span>
+                    <span class="text-[10px] text-gray-500 ml-auto hidden sm:flex items-center gap-1"><i class="fa-solid fa-circle-check text-green-500"></i> Vidking, Videasy & VidLink Active</span>
+                </div>
+                <div id="serverList" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto ep-scroll p-1">
+                    <!-- Servers injected immediately -->
+                </div>
+            </div>
+
+            <!-- Title & Synopsis -->
+            <div class="bg-[#141414]/90 backdrop-blur-md p-6 sm:p-8 rounded-xl border border-[#2a2a2a] shadow-lg flex flex-col gap-5">
+                <div>
+                    <h1 id="titleText" class="text-3xl sm:text-4xl font-black text-white leading-tight mb-3">Loading Title...</h1>
+                    <div id="metaTags" class="flex flex-wrap items-center gap-3 text-sm text-gray-300 font-medium"></div>
+                </div>
+
+                <p id="modalOverview" class="text-sm text-gray-300 leading-relaxed max-w-4xl"></p>
+
+                <div id="castContainer" class="pt-2 border-t border-[#2a2a2a] flex flex-wrap gap-2 items-center text-xs">
+                    <!-- Top Cast members -->
+                </div>
+            </div>
+
+            <!-- Franchise & Recommendations -->
+            <div class="bg-[#141414]/90 backdrop-blur-md p-6 sm:p-8 rounded-xl border border-[#2a2a2a] shadow-lg">
+                <h3 class="text-lg font-bold text-white mb-5 flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-[#e50914]"></i> Related Franchise & Recommendations
+                </h3>
+                <div id="relatedGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <!-- Recommendations injected -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDEBAR: Episode Selector with Episode Images -->
+        <div id="episodeSidebar" class="bg-[#141414]/95 backdrop-blur-md rounded-xl border border-[#2a2a2a] flex flex-col h-[750px] overflow-hidden hidden shadow-2xl">
+            <div class="p-4 border-b border-[#2a2a2a] bg-[#0a0a0a] sticky top-0 z-20">
+                <h3 class="text-sm font-bold text-white mb-2 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-list text-[#e50914]"></i> Season & Episode Selector
+                </h3>
+                <select id="seasonSelector" class="w-full bg-[#222] border border-[#444] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#e50914] cursor-pointer font-medium">
+                    <!-- Seasons injected -->
+                </select>
+            </div>
+            
+            <div id="episodeList" class="flex-1 overflow-y-auto ep-scroll p-2 flex flex-col gap-1.5">
+                <!-- Episodes with preview images injected -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+        const IMAGE_ORIGINAL_URL = "https://image.tmdb.org/t/p/original";
+        const apiKey = "8275056f6ced29fa22cc9fcdb7d41d86";
+        const JIKAN_URL = "https://api.jikan.moe/v4";
+
+        let itemData = null;
+        let targetType = 'movie';
+        let currentSeason = 1;
+        let currentEpisode = 1;
+        let activeServerIndex = 0;
+
+        // VERIFIED WORKING EMBED SERVERS DIRECTORY (CLEANED OF DEAD DOMAINS)
+        const SERVERS = {
+            movie: [
+                { name: "Vidking (4K)", url: "https://www.vidking.net/embed/movie/{id}?color=e50914&autoPlay=true", tag: "Fast" },
+                { name: "Videasy (HD)", url: "https://player.videasy.net/movie/{id}?color=e50914&overlay=true", tag: "Best" },
+                { name: "VidLink Pro", url: "https://vidlink.pro/movie/{id}", tag: "AES-256" },
+                { name: "VidFast Pro", url: "https://vidfast.pro/movie/{id}", tag: "Fast" },
+                { name: "VidSrc.me", url: "https://vidsrc.me/embed/movie/{id}", tag: "Core" },
+                { name: "VidSrc.cc", url: "https://vidsrc.cc/v2/embed/movie/{id}", tag: "Stable" },
+                { name: "VidSrc.pm", url: "https://vidsrc.pm/embed/movie/{id}", tag: "Core" },
+                { name: "VidSrc.net", url: "https://vidsrc.net/embed/movie/{id}", tag: "Core" },
+                { name: "2Embed.cc", url: "https://www.2embed.cc/embed/{id}", tag: "Reliable" },
+                { name: "2Embed.skin", url: "https://2embed.skin/embed/{id}", tag: "Reliable" },
+                { name: "MultiEmbed", url: "https://multiembed.mov/?video_id={id}", tag: "Multi" },
+                { name: "SmashyStream", url: "https://embed.smashystream.com/playere.php?tmdb={id}", tag: "Alt" },
+                { name: "RidoMovies", url: "https://ridomovies.tv/embed/movie/{id}", tag: "Backup" },
+                { name: "111Movies", url: "https://111movies.com/movie/{id}", tag: "Backup" },
+                { name: "PrimeSrc", url: "https://primesrc.me/embed/movie/{id}", tag: "Backup" }
+            ],
+            tv: [
+                { name: "Vidking K-Drama / TV", url: "https://www.vidking.net/embed/tv/{id}/{s}/{e}?color=e50914&autoPlay=true&nextEpisode=true&episodeSelector=true", tag: "Best" },
+                { name: "Videasy K-Drama / TV", url: "https://player.videasy.net/tv/{id}/{s}/{e}?color=e50914&nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true", tag: "Fast" },
+                { name: "VidLink Pro (4K)", url: "https://vidlink.pro/tv/{id}/{s}/{e}", tag: "AES-256" },
+                { name: "VidFast Pro", url: "https://vidfast.pro/tv/{id}/{s}/{e}", tag: "Fast" },
+                { name: "VidSrc.cc Asian", url: "https://vidsrc.cc/v2/embed/tv/{id}/{s}/{e}", tag: "Stable" },
+                { name: "VidSrc.me", url: "https://vidsrc.me/embed/tv/{id}/{s}-{e}", tag: "Core" },
+                { name: "VidSrc.pm", url: "https://vidsrc.pm/embed/tv/{id}/{s}/{e}", tag: "Core" },
+                { name: "VidSrc.net", url: "https://vidsrc.net/embed/tv/{id}/{s}-{e}", tag: "Core" },
+                { name: "2Embed.cc", url: "https://www.2embed.cc/embedtv/{id}&s={s}&e={e}", tag: "Reliable" },
+                { name: "2Embed.skin", url: "https://2embed.skin/embedtv/{id}&s={s}&e={e}", tag: "Reliable" },
+                { name: "MultiEmbed", url: "https://multiembed.mov/?video_id={id}&s={s}&e={e}", tag: "Multi" },
+                { name: "SmashyStream", url: "https://embed.smashystream.com/playere.php?tmdb={id}&s={s}&e={e}", tag: "Alt" },
+                { name: "RidoMovies", url: "https://ridomovies.tv/embed/tv/{id}/{s}/{e}", tag: "Backup" },
+                { name: "111Movies", url: "https://111movies.com/tv/{id}/{s}/{e}", tag: "Backup" },
+                { name: "PrimeSrc", url: "https://primesrc.me/embed/tv/{id}/{s}/{e}", tag: "Backup" }
+            ],
+            anime: [
+                { name: "Videasy Anime", url: "https://player.videasy.net/anime/{id}/{e}?color=e50914", tag: "Best" },
+                { name: "NHPlayer / Hanime CDN", url: "https://nhplayer.com/player.php?vid={title_slug}", tag: "Direct" },
+                { name: "NHPlayer Stream", url: "https://nhplayer.com/v/{title_slug}/", tag: "NH Stream" },
+                { name: "Vidking Anime", url: "https://www.vidking.net/embed/tv/{id}/1/{e}?color=e50914&autoPlay=true", tag: "Fast" },
+                { name: "VidLink Anime", url: "https://vidlink.pro/tv/{id}/1/{e}", tag: "AES-256" },
+                { name: "2Embed Anime", url: "https://www.2embed.cc/embedanime/{id}/1/{e}", tag: "Reliable" },
+                { name: "VidSrc.cc Anime", url: "https://vidsrc.cc/v2/embed/tv/{id}/1/{e}", tag: "Stable" },
+                { name: "VidSrc.me Anime", url: "https://vidsrc.me/embed/tv/{id}/1-{e}", tag: "Core" }
+            ]
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            let rawType = params.get('type') || 'movie';
+
+            if (rawType === 'kdrama' || rawType === 'series') targetType = 'tv';
+            else targetType = rawType;
+
+            renderServersUI();
+
+            if (id) {
+                fetchMediaDetails(id, targetType);
+            } else {
+                document.getElementById('titleText').textContent = "No Content Selected!";
+                document.getElementById('playerPlaceholder').innerHTML = `<p class="text-red-500 font-semibold">Please select a title from <a href="index.html" class="underline text-white">Gan TV Home</a>.</p>`;
+            }
+        });
+
+        function renderServersUI() {
+            const list = document.getElementById('serverList');
+            list.innerHTML = '';
+            const servers = SERVERS[targetType] || SERVERS.movie;
+
+            servers.forEach((srv, idx) => {
+                const isActive = idx === activeServerIndex;
+                const btn = document.createElement('button');
+                btn.className = `flex flex-col items-center justify-center px-3.5 py-1.5 rounded-lg border transition-all shrink-0 min-w-[105px] ${isActive ? 'bg-[#e50914]/20 border-[#e50914] text-white shadow-[0_0_15px_rgba(229,9,20,0.3)]' : 'bg-[#222] border-[#444] text-gray-400 hover:bg-[#333]'}`;
+                btn.onclick = () => {
+                    activeServerIndex = idx;
+                    renderServersUI();
+                    loadVideoSource();
+                };
+                btn.innerHTML = `<span class="text-xs font-bold whitespace-nowrap">${srv.name}</span><span class="text-[8px] uppercase text-[#e50914] font-black">${srv.tag}</span>`;
+                list.appendChild(btn);
+            });
+        }
+
+        function getTitleSlug(item, epNumber) {
+            if (!item) return `media-episode-${epNumber}`;
+            let baseTitle = item.title_english || item.name || item.title || item.original_name || item.original_title || "media";
+            
+            let slug = baseTitle.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^\w\s-]/g, '')
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-');
+            
+            if (epNumber) slug += `-${epNumber}`;
+            return slug;
+        }
+
+        async function fetchMediaDetails(id, type) {
+            try {
+                if (type === 'anime') {
+                    try {
+                        const malRes = await fetch(`${JIKAN_URL}/anime/${id}/full`);
+                        const malData = await malRes.json();
+                        if (malData.data && malData.data.mal_id) {
+                            const anime = malData.data;
+                            itemData = {
+                                id: anime.mal_id,
+                                title: anime.title_english || anime.title,
+                                original_title: anime.title_japanese || anime.title,
+                                overview: anime.synopsis,
+                                backdrop_path: null,
+                                poster_path: anime.images?.jpg?.large_image_url,
+                                vote_average: anime.score,
+                                release_date: anime.aired?.from,
+                                status: anime.status,
+                                runtime: anime.duration,
+                                genres: anime.genres
+                            };
+                            buildTheatre(itemData, 'anime');
+                            return;
+                        }
+                    } catch(e) {}
+                }
+
+                const fetchType = type === 'anime' ? 'tv' : type;
+                const res = await fetch(`https://api.themoviedb.org/3/${fetchType}/${id}?api_key=${apiKey}&append_to_response=credits,recommendations,similar`);
+                const data = await res.json();
+                
+                if (data.id) {
+                    itemData = data;
+                    buildTheatre(data, type);
+                } else {
+                    itemData = { id: id, title: `Title ID #${id}`, overview: 'Stream ready. Select a server above.' };
+                    buildTheatre(itemData, type);
+                }
+            } catch (err) {
+                console.error(err);
+                itemData = { id: id, title: `Title ID #${id}`, overview: 'Select a server above to play.' };
+                buildTheatre(itemData, type);
+            }
+        }
+
+        function buildTheatre(item, type) {
+            const title = item.title || item.name || `Title #${item.id}`;
+            document.title = `${title} - Gan TV Player`;
+            document.getElementById('titleText').textContent = title;
+
+            const backdrop = item.backdrop_path ? `${IMAGE_ORIGINAL_URL}${item.backdrop_path}` : (item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `${IMAGE_ORIGINAL_URL}${item.poster_path}`) : '');
+            if (backdrop) document.getElementById('ambientGlow').style.backgroundImage = `url('${backdrop}')`;
+
+            const year = (item.release_date || item.first_air_date || "").substring(0, 4);
+            const runtime = item.runtime ? `${item.runtime} mins` : (item.episode_run_time?.[0] ? `${item.episode_run_time[0]} mins/ep` : '');
+            const genres = item.genres ? item.genres.map(g => g.name).join(', ') : '';
+
+            document.getElementById('metaTags').innerHTML = `
+                <span class="text-green-400 font-bold">${item.vote_average ? Math.round(item.vote_average * 10) + '% Rating' : 'New'}</span>
+                <span>${year}</span>
+                <span class="border border-gray-600 px-1.5 py-0.5 rounded text-[10px] uppercase">${item.status || 'Released'}</span>
+                <span>${runtime}</span>
+                <span class="text-gray-400">&bull; ${genres}</span>
+            `;
+
+            document.getElementById('modalOverview').textContent = item.overview || 'No synopsis available.';
+
+            const castBox = document.getElementById('castContainer');
+            if (item.credits?.cast?.length > 0) {
+                const topCast = item.credits.cast.slice(0, 6).map(c => `<span class="bg-[#222] border border-[#333] px-2.5 py-1 rounded-md text-gray-300 font-medium">${c.name}</span>`).join('');
+                castBox.innerHTML = `<span class="text-gray-500 font-bold uppercase tracking-wider mr-2">Top Cast:</span> ${topCast}`;
+            } else castBox.innerHTML = '';
+
+            renderServersUI();
+
+            if (type === 'tv' || type === 'anime') {
+                document.getElementById('episodeSidebar').classList.remove('hidden');
+                const sSel = document.getElementById('seasonSelector');
+                sSel.innerHTML = '';
+                const validSeasons = item.seasons ? item.seasons.filter(s => s.season_number > 0) : [{ season_number: 1, name: "Season 1" }];
+                if (validSeasons.length === 0) validSeasons.push({ season_number: 1, name: "Season 1" });
+
+                validSeasons.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.season_number;
+                    opt.textContent = s.name || `Season ${s.season_number}`;
+                    sSel.appendChild(opt);
+                });
+
+                sSel.onchange = (e) => loadSeasonEpisodes(e.target.value);
+                
+                const latestS = item.last_episode_to_air ? item.last_episode_to_air.season_number : validSeasons[0].season_number;
+                sSel.value = latestS;
+                currentSeason = latestS;
+                currentEpisode = item.last_episode_to_air ? item.last_episode_to_air.episode_number : 1;
+
+                loadSeasonEpisodes(latestS, true);
+            } else {
+                document.getElementById('episodeSidebar').classList.add('hidden');
+                loadVideoSource();
+            }
+
+            renderRecommendations(item);
+        }
+
+        async function loadSeasonEpisodes(seasonNum, autoPlay = false) {
+            currentSeason = seasonNum;
+            const epContainer = document.getElementById('episodeList');
+            epContainer.innerHTML = `<div class="flex justify-center py-12"><div class="w-8 h-8 border-2 border-[#e50914] border-t-transparent rounded-full animate-spin"></div></div>`;
+
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/tv/${itemData.id}/season/${seasonNum}?api_key=${apiKey}`);
+                const data = await res.json();
+
+                epContainer.innerHTML = '';
+                if (data.episodes && data.episodes.length > 0) {
+                    data.episodes.forEach(ep => {
+                        const isActive = (ep.episode_number == currentEpisode);
+                        const img = ep.still_path ? `${IMAGE_BASE_URL}${ep.still_path}` : (itemData.backdrop_path ? `${IMAGE_BASE_URL}${itemData.backdrop_path}` : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500');
+
+                        const div = document.createElement('div');
+                        div.className = `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors border-l-4 ${isActive ? 'bg-[#222] border-[#e50914]' : 'hover:bg-[#222] border-transparent'}`;
+                        div.onclick = () => {
+                            currentEpisode = ep.episode_number;
+                            loadSeasonEpisodes(currentSeason, true);
+                        };
+
+                        div.innerHTML = `
+                            <div class="w-28 h-16 bg-[#111] rounded overflow-hidden shrink-0 relative shadow-md">
+                                <img src="${img}" class="w-full h-full object-cover">
+                                ${isActive ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center"><i class="fa-solid fa-play text-white text-sm"></i></div>' : ''}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-xs font-bold text-white truncate ${isActive ? 'text-[#e50914]' : ''}">${ep.episode_number}. ${ep.name}</h4>
+                                <p class="text-[10px] text-gray-400 mt-1 truncate">${ep.air_date || 'Unknown'} &bull; ${ep.runtime || '?'}m</p>
+                            </div>
+                        `;
+                        epContainer.appendChild(div);
+                    });
+
+                    if (autoPlay) loadVideoSource();
+                } else {
+                    for (let i = 1; i <= 24; i++) {
+                        const isActive = (i == currentEpisode);
+                        const div = document.createElement('div');
+                        div.className = `p-3 rounded-lg cursor-pointer transition-colors border-l-4 ${isActive ? 'bg-[#222] border-[#e50914]' : 'hover:bg-[#222] border-transparent'}`;
+                        div.onclick = () => { currentEpisode = i; loadVideoSource(); };
+                        div.innerHTML = `<h4 class="text-xs font-bold ${isActive ? 'text-[#e50914]' : 'text-white'}">Episode ${i}</h4>`;
+                        epContainer.appendChild(div);
+                    }
+                    if (autoPlay) loadVideoSource();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function loadVideoSource() {
+            const player = document.getElementById('mainPlayer');
+            const placeholder = document.getElementById('playerPlaceholder');
+            const failover = document.getElementById('serverFailoverBanner');
+
+            failover.classList.add('hidden');
+            player.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+
+            const servers = SERVERS[targetType] || SERVERS.movie;
+            const srv = servers[activeServerIndex];
+            
+            const slug = getTitleSlug(itemData, currentEpisode);
+
+            let url = srv.url
+                .replace('{title_slug}', slug)
+                .replace('{id}', itemData.id)
+                .replace('{tmdb_id}', itemData.id);
+
+            if (targetType === 'tv' || targetType === 'anime') {
+                url = url.replace('{s}', currentSeason).replace('{season}', currentSeason);
+                url = url.replace('{e}', currentEpisode).replace('{episode}', currentEpisode);
+            }
+
+            player.src = url;
+
+            setTimeout(() => {
+                placeholder.classList.add('hidden');
+                player.classList.remove('hidden');
+            }, 800);
+        }
+
+        function switchNextServer() {
+            const servers = SERVERS[targetType] || SERVERS.movie;
+            activeServerIndex = (activeServerIndex + 1) % servers.length;
+            renderServersUI();
+            loadVideoSource();
+        }
+
+        function renderRecommendations(item) {
+            const grid = document.getElementById('relatedGrid');
+            grid.innerHTML = '';
+            const list = item.recommendations?.results?.length > 0 ? item.recommendations.results : (item.similar?.results || []);
+
+            if (list.length > 0) {
+                list.slice(0, 10).forEach(rec => {
+                    const title = rec.title || rec.name;
+                    const poster = rec.poster_path ? `${IMAGE_BASE_URL}${rec.poster_path}` : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
+                    const recType = rec.title ? 'movie' : 'tv';
+
+                    const card = document.createElement('div');
+                    card.className = "movie-card rounded-md overflow-hidden bg-[#222] cursor-pointer flex flex-col h-full shadow-md";
+                    card.onclick = () => window.location.href = `player.html?id=${rec.id}&type=${recType}`;
+
+                    card.innerHTML = `
+                        <div class="relative aspect-[2/3] w-full bg-[#111]">
+                            <img src="${poster}" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#141414] to-transparent opacity-80"></div>
+                            <div class="absolute bottom-2 left-2 right-2">
+                                <h4 class="font-bold text-xs text-white line-clamp-1">${title}</h4>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } else {
+                grid.innerHTML = `<p class="text-xs text-gray-500 col-span-full">No related titles found.</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
