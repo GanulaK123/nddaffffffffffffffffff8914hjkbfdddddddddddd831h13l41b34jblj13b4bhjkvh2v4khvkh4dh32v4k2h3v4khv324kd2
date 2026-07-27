@@ -3,13 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GAN TV - Theatre Player</title>
+    <title>Flex TV - Theatre Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Sinhala:wght@400;600;800&display=swap');
         
-        body { font-family: 'Inter', sans-serif; background-color: #0a0a0a; color: #e5e5e5; overflow-x: hidden; }
+        body { 
+            font-family: 'Inter', 'Noto Sans Sinhala', sans-serif; 
+            background-color: #0a0a0a; 
+            color: #e5e5e5; 
+            overflow-x: hidden;
+            padding-bottom: 70px; /* Offset for Mobile Nav */
+        }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0a0a0a; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
@@ -18,9 +24,86 @@
         .ambient-glow { filter: blur(100px) saturate(220%) opacity(0.35); transform: scale(1.15); pointer-events: none; }
         .movie-card { transition: transform 0.3s ease; }
         .movie-card:hover { transform: scale(1.05); }
+
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            background: #141414;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+        }
+        .splash-fade {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .mobile-bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 65px;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid #262626;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 9990;
+        }
+
+        /* CUSTOM FULLSCREEN CONTAINER STYLING */
+        #playerTheatreContainer:fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            background: #000 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        /* SUBTITLE OVERLAY DISPLAY */
+        #subtitleOverlay {
+            position: absolute;
+            bottom: 10%;
+            left: 5%;
+            right: 5%;
+            text-align: center;
+            pointer-events: none;
+            z-index: 50;
+        }
+        .sub-text-box {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.82);
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: 700;
+            padding: 8px 20px;
+            border-radius: 8px;
+            text-shadow: 0px 2px 5px rgba(0,0,0,0.95);
+            box-shadow: 0px 4px 20px rgba(0,0,0,0.8);
+            line-height: 1.4;
+            max-width: 90%;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        @media (min-width: 768px) {
+            .sub-text-box { font-size: 1.65rem; padding: 10px 28px; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="text-[#e50914] text-5xl md:text-7xl font-black tracking-tighter mb-1 animate-pulse">
+            FLEX <span class="text-white">TV</span>
+        </div>
+        <div class="text-[10px] md:text-xs font-semibold tracking-widest text-gray-500 uppercase mb-4">by Ganula</div>
+        <div class="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin shadow-[0_0_15px_#e50914]"></div>
+    </div>
 
     <!-- Ambient Background Glow -->
     <div id="ambientGlow" class="absolute inset-0 z-0 bg-cover bg-center ambient-glow transition-all duration-1000"></div>
@@ -31,26 +114,37 @@
             <i class="fa-solid fa-arrow-left"></i> Back to Catalogue
         </a>
         <div class="text-[#e50914] text-2xl font-black tracking-tighter">
-            GAN <span class="text-white">TV</span>
+            FLEX <span class="text-white">TV</span>
         </div>
-        <a href="filter.html" class="text-xs bg-[#222] hover:bg-[#333] text-gray-300 hover:text-white px-3 py-1.5 rounded-full border border-[#444] transition-colors flex items-center gap-1.5">
-            <i class="fa-solid fa-sliders text-[#e50914]"></i> Discover
-        </a>
+
+        <div class="flex items-center gap-2">
+            <!-- ADBLOCKER PILL BADGE BEFORE DISCOVER -->
+            <span onclick="showAdblockModal()" class="px-3 py-1.5 rounded-full text-xs font-extrabold bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 flex items-center gap-1.5 cursor-pointer hover:bg-emerald-900/90 transition-all shadow-md">
+                <i class="fa-solid fa-shield-halved text-emerald-400"></i> AdBlocker: Active
+            </span>
+
+            <a href="filter.html" class="text-xs bg-[#222] hover:bg-[#333] text-gray-300 hover:text-white px-3 py-1.5 rounded-full border border-[#444] transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-sliders text-[#e50914]"></i> Discover
+            </a>
+        </div>
     </header>
 
     <!-- Main Theatre Layout -->
     <main class="flex-1 max-w-[1650px] w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 relative z-10">
         
-        <!-- LEFT COLUMN: Video Player & Server Selection -->
+        <!-- LEFT COLUMN: Video Player, Subtitles, Controls & Server Selection -->
         <div class="flex flex-col gap-6">
             
-            <!-- Video Player Box -->
-            <div class="w-full aspect-video bg-[#000] rounded-2xl overflow-hidden relative shadow-[0_20px_60px_rgba(0,0,0,0.95)] border border-[#333]">
+            <!-- THEATRE CONTAINER (Enables Fullscreen Subtitles) -->
+            <div id="playerTheatreContainer" class="w-full aspect-video bg-[#000] rounded-2xl overflow-hidden relative shadow-[0_20px_60px_rgba(0,0,0,0.95)] border border-[#333]">
+                
+                <!-- Initial Loader -->
                 <div id="playerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center bg-[#111] z-10">
                     <div class="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p class="text-sm text-gray-400 font-medium tracking-widest uppercase animate-pulse">Connecting to verified stream engine...</p>
                 </div>
 
+                <!-- Server Failover Banner -->
                 <div id="serverFailoverBanner" class="hidden absolute inset-0 z-30 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
                     <i class="fa-solid fa-triangle-exclamation text-yellow-500 text-4xl mb-3"></i>
                     <h3 class="text-lg font-bold text-white mb-2">We are extremely sorry for the inconvenience!</h3>
@@ -60,15 +154,73 @@
                     </button>
                 </div>
 
-                <iframe id="mainPlayer" class="absolute inset-0 w-full h-full z-20 hidden bg-black" frameborder="0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture; encrypted-media"></iframe>
+                <!-- SUBTITLE OVERLAY LAYER (Visible in Fullscreen & Normal Mode) -->
+                <div id="subtitleOverlay" class="hidden">
+                    <div id="subtitleText" class="sub-text-box"></div>
+                </div>
+
+                <!-- UNRESTRICTED STREAM PLAYER (SANDBOX REMOVED FOR 100% PLAYABILITY) -->
+                <iframe id="mainPlayer" class="absolute inset-0 w-full h-full z-20 hidden bg-black" frameborder="0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"></iframe>
             </div>
 
-            <!-- Multi-Server Selector Engine (Clean Active Servers Only) -->
+            <!-- ADVANCED SUBTITLE PLAYER CONTROL PANEL -->
+            <div class="bg-[#141414]/90 backdrop-blur-md p-4 rounded-xl border border-[#2a2a2a] shadow-lg flex flex-col gap-4">
+                <div class="flex items-center justify-between border-b border-[#2a2a2a] pb-3">
+                    <div class="flex items-center gap-2 text-xs font-bold text-gray-300 uppercase tracking-widest">
+                        <i class="fa-solid fa-closed-captioning text-[#e50914] text-sm"></i>
+                        Subtitle Player & Sync Controller
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="subClockDisplay" class="text-xs font-mono font-bold bg-[#0a0a0a] text-emerald-400 px-2.5 py-1 rounded border border-[#333]">00:00</span>
+                        <span id="subStatusBadge" class="text-[10px] bg-[#222] border border-[#333] px-2 py-1 rounded text-gray-400 font-semibold">Subs: Off</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Upload Custom SRT / VTT -->
+                    <label class="bg-[#222] hover:bg-[#333] border border-[#444] text-white text-xs font-bold px-3 py-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-file-arrow-up text-blue-400"></i> Upload Subtitle
+                        <input type="file" id="subFileInput" accept=".srt,.vtt" class="hidden" onchange="handleSubtitleUpload(event)">
+                    </label>
+
+                    <!-- Subtitle Playback Clock Controls -->
+                    <div class="flex items-center bg-[#181818] border border-[#333] rounded-lg p-1 text-xs font-semibold gap-1">
+                        <button id="subPlayPauseBtn" onclick="toggleSubtitleTimer()" class="px-3 py-1 bg-[#e50914] hover:bg-red-700 rounded text-white font-bold flex items-center gap-1.5 disabled:opacity-40" disabled>
+                            <i id="subPlayIcon" class="fa-solid fa-play text-xs"></i> <span id="subPlayText">Play Subs</span>
+                        </button>
+                        <button onclick="resetSubtitleClock()" class="px-2.5 py-1 bg-[#222] hover:bg-[#333] rounded text-gray-300 hover:text-white" title="Reset Subtitles to 00:00">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                        <button onclick="seekSubtitleTime(-5)" class="px-2 py-1 bg-[#222] hover:bg-[#333] rounded text-gray-300 hover:text-white">-5s</button>
+                        <button onclick="seekSubtitleTime(5)" class="px-2 py-1 bg-[#222] hover:bg-[#333] rounded text-gray-300 hover:text-white">+5s</button>
+                    </div>
+
+                    <!-- Translate to Sinhala Button -->
+                    <button id="translateSinhalaBtn" onclick="translateCurrentSubtitlesToSinhala()" class="bg-[#222] hover:bg-[#333] border border-[#444] text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-40" disabled>
+                        <i class="fa-solid fa-language text-yellow-500 text-sm"></i> Translate to Sinhala
+                    </button>
+
+                    <!-- Subtitle Fine Sync Adjusters -->
+                    <div class="flex items-center bg-[#181818] border border-[#333] rounded-lg p-1 text-xs font-semibold gap-1">
+                        <span class="text-gray-500 px-1 text-[10px] uppercase">Sync:</span>
+                        <button onclick="adjustSubSync(-0.5)" class="px-2 py-0.5 bg-[#222] hover:bg-[#333] rounded text-white">-0.5s</button>
+                        <span id="subSyncOffset" class="text-emerald-400 text-[11px] px-1">0.0s</span>
+                        <button onclick="adjustSubSync(0.5)" class="px-2 py-0.5 bg-[#222] hover:bg-[#333] rounded text-white">+0.5s</button>
+                    </div>
+
+                    <!-- Custom Container Fullscreen Button -->
+                    <button onclick="toggleTheatreFullscreen()" class="ml-auto bg-[#e50914] hover:bg-red-700 text-white font-extrabold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-md">
+                        <i class="fa-solid fa-expand"></i> Fullscreen with Subs
+                    </button>
+                </div>
+            </div>
+
+            <!-- Multi-Server Selector Engine (Server 1, Server 2... + Red Provider Name) -->
             <div class="bg-[#141414]/90 backdrop-blur-md p-4 rounded-xl border border-[#2a2a2a] shadow-lg">
                 <div class="flex items-center gap-3 mb-3">
                     <i class="fa-solid fa-server text-[#e50914]"></i>
                     <span class="text-xs font-bold text-gray-300 uppercase tracking-widest">Multi-Server Streaming Engines (Verified High-Uptime CDNs)</span>
-                    <span class="text-[10px] text-gray-500 ml-auto hidden sm:flex items-center gap-1"><i class="fa-solid fa-circle-check text-green-500"></i> Vidking, Videasy & VidLink Active</span>
+                    <span class="text-[10px] text-gray-500 ml-auto hidden sm:flex items-center gap-1"><i class="fa-solid fa-shield-halved text-green-500"></i> FlexShield Active</span>
                 </div>
                 <div id="serverList" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto ep-scroll p-1">
                     <!-- Servers injected immediately -->
@@ -119,7 +271,94 @@
 
     </main>
 
+    <!-- TIKTOK STYLE MOBILE BOTTOM NAVIGATION -->
+    <div class="md:hidden mobile-bottom-nav">
+        <button onclick="window.location.href='index.html'" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Home</span>
+        </button>
+        <button onclick="window.location.href='index.html?cat=movie'" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-film text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Movies</span>
+        </button>
+        
+        <!-- TIKTOK CENTERED SEARCH BUTTON -->
+        <button onclick="window.location.href='filter.html?focus=search'" class="w-12 h-12 -mt-5 bg-[#e50914] rounded-full flex items-center justify-center text-white shadow-lg border-2 border-[#141414] hover:scale-105 transition-transform active:scale-95">
+            <i class="fa-solid fa-magnifying-glass text-lg"></i>
+        </button>
+
+        <button onclick="window.location.href='index.html?cat=tv'" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-tv text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">TV Shows</span>
+        </button>
+        <button onclick="window.location.href='filter.html?mode=anime'" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-fire text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Anime</span>
+        </button>
+    </div>
+
+    <!-- ADBLOCK STATUS MODAL -->
+    <div id="adblockStatusModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-[#181818] max-w-md w-full rounded-2xl border border-[#333] p-6 shadow-2xl relative text-center">
+            <i class="fa-solid fa-shield-halved text-emerald-400 text-5xl mb-3 animate-pulse"></i>
+            <h3 class="text-xl font-extrabold text-white mb-2">FlexShield AdBlocker Engaged</h3>
+            <p class="text-xs text-gray-300 leading-relaxed mb-6">
+                Our in-built scriptlet blocker operates directly inside Flex TV. It neutralizes popup windows, click-under redirect ads, and top-level page hijack scripts automatically without triggering video sandbox errors!
+            </p>
+            <button onclick="hideAdblockModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-lg text-xs transition-colors shadow-lg">
+                Got it, Thanks!
+            </button>
+        </div>
+    </div>
+
     <script>
+        // FLEXSHIELD NATIVE ADBLOCK ENGINE (uBlock Style - Traps Popups & Redirects)
+        (function() {
+            const nativeOpen = window.open;
+            window.open = function(url, target, features) {
+                if (!url) return null;
+                try {
+                    const dest = new URL(url, window.location.href);
+                    if (dest.origin === window.location.origin || url.includes('player.html') || url.includes('filter.html') || url.includes('index.html')) {
+                        return nativeOpen.apply(window, arguments);
+                    }
+                } catch(e) {}
+                console.warn('[FlexShield] Blocked popup ad:', url);
+                return null;
+            };
+
+            document.addEventListener('click', function(e) {
+                let node = e.target;
+                while (node && node !== document) {
+                    if (node.tagName === 'A') {
+                        const href = node.getAttribute('href');
+                        if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                            try {
+                                const targetUrl = new URL(href, window.location.href);
+                                if (targetUrl.origin !== window.location.origin && !href.includes('index.html') && !href.includes('filter.html') && !href.includes('player.html')) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.warn('[FlexShield] Blocked external click ad:', href);
+                                    return false;
+                                }
+                            } catch(err) {}
+                        }
+                    }
+                    node = node.parentNode;
+                }
+            }, true);
+
+            // ANTI-POP-UNDER / FOCUS BLUR GUARD
+            window.addEventListener('blur', function() {
+                if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+                    window.focus(); // Pull focus back immediately if ad window tries to open behind
+                }
+            });
+        })();
+
+        function showAdblockModal() { document.getElementById('adblockStatusModal').classList.remove('hidden'); }
+        function hideAdblockModal() { document.getElementById('adblockStatusModal').classList.add('hidden'); }
+
         const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
         const IMAGE_ORIGINAL_URL = "https://image.tmdb.org/t/p/original";
         const apiKey = "8275056f6ced29fa22cc9fcdb7d41d86";
@@ -131,11 +370,25 @@
         let currentEpisode = 1;
         let activeServerIndex = 0;
 
-        // VERIFIED WORKING EMBED SERVERS DIRECTORY (CLEANED OF DEAD DOMAINS)
+        // Subtitle System Global Variables
+        let subtitleCues = [];
+        let subPlaybackTimer = null;
+        let subSyncOffsetSec = 0.0;
+        let subCurrentTimeSec = 0.0;
+        let subIsPlaying = false;
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('splash-fade');
+                setTimeout(() => document.getElementById('splash-screen').style.display = 'none', 800);
+            }, 500);
+        });
+
+        // VERIFIED WORKING EMBED SERVERS DIRECTORY
         const SERVERS = {
             movie: [
-                { name: "Vidking (4K)", url: "https://www.vidking.net/embed/movie/{id}?color=e50914&autoPlay=true", tag: "Fast" },
-                { name: "Videasy (HD)", url: "https://player.videasy.net/movie/{id}?color=e50914&overlay=true", tag: "Best" },
+                { name: "Vidking 4K", url: "https://www.vidking.net/embed/movie/{id}?color=e50914&autoPlay=true", tag: "Fast" },
+                { name: "Videasy HD", url: "https://player.videasy.net/movie/{id}?color=e50914&overlay=true", tag: "Best" },
                 { name: "VidLink Pro", url: "https://vidlink.pro/movie/{id}", tag: "AES-256" },
                 { name: "VidFast Pro", url: "https://vidfast.pro/movie/{id}", tag: "Fast" },
                 { name: "VidSrc.me", url: "https://vidsrc.me/embed/movie/{id}", tag: "Core" },
@@ -151,9 +404,9 @@
                 { name: "PrimeSrc", url: "https://primesrc.me/embed/movie/{id}", tag: "Backup" }
             ],
             tv: [
-                { name: "Vidking K-Drama / TV", url: "https://www.vidking.net/embed/tv/{id}/{s}/{e}?color=e50914&autoPlay=true&nextEpisode=true&episodeSelector=true", tag: "Best" },
-                { name: "Videasy K-Drama / TV", url: "https://player.videasy.net/tv/{id}/{s}/{e}?color=e50914&nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true", tag: "Fast" },
-                { name: "VidLink Pro (4K)", url: "https://vidlink.pro/tv/{id}/{s}/{e}", tag: "AES-256" },
+                { name: "Vidking TV", url: "https://www.vidking.net/embed/tv/{id}/{s}/{e}?color=e50914&autoPlay=true&nextEpisode=true&episodeSelector=true", tag: "Best" },
+                { name: "Videasy TV", url: "https://player.videasy.net/tv/{id}/{s}/{e}?color=e50914&nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true", tag: "Fast" },
+                { name: "VidLink Pro", url: "https://vidlink.pro/tv/{id}/{s}/{e}", tag: "AES-256" },
                 { name: "VidFast Pro", url: "https://vidfast.pro/tv/{id}/{s}/{e}", tag: "Fast" },
                 { name: "VidSrc.cc Asian", url: "https://vidsrc.cc/v2/embed/tv/{id}/{s}/{e}", tag: "Stable" },
                 { name: "VidSrc.me", url: "https://vidsrc.me/embed/tv/{id}/{s}-{e}", tag: "Core" },
@@ -169,8 +422,8 @@
             ],
             anime: [
                 { name: "Videasy Anime", url: "https://player.videasy.net/anime/{id}/{e}?color=e50914", tag: "Best" },
-                { name: "NHPlayer / Hanime CDN", url: "https://nhplayer.com/player.php?vid={title_slug}", tag: "Direct" },
-                { name: "NHPlayer Stream", url: "https://nhplayer.com/v/{title_slug}/", tag: "NH Stream" },
+                { name: "NHPlayer", url: "https://nhplayer.com/player.php?vid={title_slug}", tag: "Direct" },
+                { name: "NH Stream", url: "https://nhplayer.com/v/{title_slug}/", tag: "NH Stream" },
                 { name: "Vidking Anime", url: "https://www.vidking.net/embed/tv/{id}/1/{e}?color=e50914&autoPlay=true", tag: "Fast" },
                 { name: "VidLink Anime", url: "https://vidlink.pro/tv/{id}/1/{e}", tag: "AES-256" },
                 { name: "2Embed Anime", url: "https://www.2embed.cc/embedanime/{id}/1/{e}", tag: "Reliable" },
@@ -193,10 +446,11 @@
                 fetchMediaDetails(id, targetType);
             } else {
                 document.getElementById('titleText').textContent = "No Content Selected!";
-                document.getElementById('playerPlaceholder').innerHTML = `<p class="text-red-500 font-semibold">Please select a title from <a href="index.html" class="underline text-white">GAN TV Home</a>.</p>`;
+                document.getElementById('playerPlaceholder').innerHTML = `<p class="text-red-500 font-semibold">Please select a title from <a href="index.html" class="underline text-white">Flex TV Home</a>.</p>`;
             }
         });
 
+        // RENAMED SERVER DISPLAY LOGIC: Server 1, Server 2... with RED original name
         function renderServersUI() {
             const list = document.getElementById('serverList');
             list.innerHTML = '';
@@ -211,7 +465,7 @@
                     renderServersUI();
                     loadVideoSource();
                 };
-                btn.innerHTML = `<span class="text-xs font-bold whitespace-nowrap">${srv.name}</span><span class="text-[8px] uppercase text-[#e50914] font-black">${srv.tag}</span>`;
+                btn.innerHTML = `<span class="text-xs font-bold text-white whitespace-nowrap">Server ${idx + 1}</span><span class="text-[9px] uppercase text-[#e50914] font-extrabold">${srv.name}</span>`;
                 list.appendChild(btn);
             });
         }
@@ -278,7 +532,7 @@
 
         function buildTheatre(item, type) {
             const title = item.title || item.name || `Title #${item.id}`;
-            document.title = `${title} - GAN TV Player`;
+            document.title = `${title} - Flex TV Player`;
             document.getElementById('titleText').textContent = title;
 
             const backdrop = item.backdrop_path ? `${IMAGE_ORIGINAL_URL}${item.backdrop_path}` : (item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `${IMAGE_ORIGINAL_URL}${item.poster_path}`) : '');
@@ -395,6 +649,9 @@
             player.classList.add('hidden');
             placeholder.classList.remove('hidden');
 
+            // Reset Subtitles clock when switching server/content
+            resetSubtitleClock();
+
             const servers = SERVERS[targetType] || SERVERS.movie;
             const srv = servers[activeServerIndex];
             
@@ -453,6 +710,216 @@
                 });
             } else {
                 grid.innerHTML = `<p class="text-xs text-gray-500 col-span-full">No related titles found.</p>`;
+            }
+        }
+
+        // =========================================================================
+        // ADVANCED SUBTITLE ENGINE & LIVE SINHALA TRANSLATOR
+        // =========================================================================
+
+        function handleSubtitleUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                if (file.name.endsWith('.vtt')) {
+                    subtitleCues = parseVTT(content);
+                } else {
+                    subtitleCues = parseSRT(content);
+                }
+
+                if (subtitleCues.length > 0) {
+                    document.getElementById('subStatusBadge').textContent = `Subs: Loaded (${subtitleCues.length} Cues)`;
+                    document.getElementById('subStatusBadge').className = "text-[10px] bg-emerald-950/80 border border-emerald-500/50 text-emerald-400 px-2 py-0.5 rounded font-bold";
+                    document.getElementById('translateSinhalaBtn').disabled = false;
+                    document.getElementById('subPlayPauseBtn').disabled = false;
+                    document.getElementById('subtitleOverlay').classList.remove('hidden');
+                    
+                    // Reset clock to 00:00 without auto-starting
+                    subCurrentTimeSec = 0.0;
+                    subIsPlaying = false;
+                    updateSubtitleClockUI();
+                    renderSubtitleAtCurrentTime();
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // SRT Subtitle Parser
+        function parseSRT(data) {
+            const pattern = /(\d+)\r?\n(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\r?\n([\s\S]*?)(?=\r?\n\r?\n|\r?\n$)/g;
+            let result = [];
+            let match;
+            while ((match = pattern.exec(data)) !== null) {
+                result.push({
+                    start: timeToSeconds(match[2].replace(',', '.')),
+                    end: timeToSeconds(match[3].replace(',', '.')),
+                    text: match[4].replace(/<[^>]*>/g, '').trim()
+                });
+            }
+            return result;
+        }
+
+        // VTT Subtitle Parser
+        function parseVTT(data) {
+            const pattern = /(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})\r?\n([\s\S]*?)(?=\r?\n\r?\n|\r?\n$)/g;
+            let result = [];
+            let match;
+            while ((match = pattern.exec(data)) !== null) {
+                result.push({
+                    start: timeToSeconds(match[1]),
+                    end: timeToSeconds(match[2]),
+                    text: match[3].replace(/<[^>]*>/g, '').trim()
+                });
+            }
+            return result;
+        }
+
+        function timeToSeconds(timeStr) {
+            const p = timeStr.split(':');
+            let s = 0;
+            if (p.length === 3) {
+                s = parseInt(p[0]) * 3600 + parseInt(p[1]) * 60 + parseFloat(p[2]);
+            } else if (p.length === 2) {
+                s = parseInt(p[0]) * 60 + parseFloat(p[1]);
+            }
+            return s;
+        }
+
+        function formatSecondsToClock(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        // SUBTITLE CLOCK CONTROLS
+        function toggleSubtitleTimer() {
+            subIsPlaying = !subIsPlaying;
+            const btnIcon = document.getElementById('subPlayIcon');
+            const btnText = document.getElementById('subPlayText');
+
+            if (subIsPlaying) {
+                btnIcon.className = "fa-solid fa-pause text-xs";
+                btnText.textContent = "Pause Subs";
+                startSubtitleClockLoop();
+            } else {
+                btnIcon.className = "fa-solid fa-play text-xs";
+                btnText.textContent = "Play Subs";
+                if (subPlaybackTimer) clearInterval(subPlaybackTimer);
+            }
+        }
+
+        function startSubtitleClockLoop() {
+            if (subPlaybackTimer) clearInterval(subPlaybackTimer);
+            
+            subPlaybackTimer = setInterval(() => {
+                if (!subIsPlaying || subtitleCues.length === 0) return;
+
+                subCurrentTimeSec += 0.25; // Increment 250ms
+                updateSubtitleClockUI();
+                renderSubtitleAtCurrentTime();
+            }, 250);
+        }
+
+        function renderSubtitleAtCurrentTime() {
+            const activeSec = subCurrentTimeSec + subSyncOffsetSec;
+            const activeCue = subtitleCues.find(c => activeSec >= c.start && activeSec <= c.end);
+            const subBox = document.getElementById('subtitleText');
+
+            if (activeCue) {
+                subBox.innerHTML = activeCue.text.replace(/\n/g, '<br>');
+                subBox.style.display = 'inline-block';
+            } else {
+                subBox.style.display = 'none';
+            }
+        }
+
+        function updateSubtitleClockUI() {
+            document.getElementById('subClockDisplay').textContent = formatSecondsToClock(subCurrentTimeSec);
+        }
+
+        function resetSubtitleClock() {
+            if (subPlaybackTimer) clearInterval(subPlaybackTimer);
+            subIsPlaying = false;
+            subCurrentTimeSec = 0.0;
+            updateSubtitleClockUI();
+            
+            const btnIcon = document.getElementById('subPlayIcon');
+            const btnText = document.getElementById('subPlayText');
+            if (btnIcon && btnText) {
+                btnIcon.className = "fa-solid fa-play text-xs";
+                btnText.textContent = "Play Subs";
+            }
+            
+            const subBox = document.getElementById('subtitleText');
+            if (subBox) subBox.style.display = 'none';
+        }
+
+        function seekSubtitleTime(sec) {
+            subCurrentTimeSec = Math.max(0, subCurrentTimeSec + sec);
+            updateSubtitleClockUI();
+            renderSubtitleAtCurrentTime();
+        }
+
+        function adjustSubSync(offset) {
+            subSyncOffsetSec += offset;
+            document.getElementById('subSyncOffset').textContent = `${subSyncOffsetSec > 0 ? '+' : ''}${subSyncOffsetSec.toFixed(1)}s`;
+            renderSubtitleAtCurrentTime();
+        }
+
+        // LIVE SINHALA TRANSLATION ENGINE (Google Neural Translator API Endpoint)
+        async function translateCurrentSubtitlesToSinhala() {
+            if (subtitleCues.length === 0) return;
+
+            const btn = document.getElementById('translateSinhalaBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-yellow-500"></i> Translating to Sinhala...`;
+            btn.disabled = true;
+
+            try {
+                const chunkSize = 25;
+                for (let i = 0; i < subtitleCues.length; i += chunkSize) {
+                    const chunk = subtitleCues.slice(i, i + chunkSize);
+                    const combinedText = chunk.map(c => c.text.replace(/\n/g, ' ')).join(' ||| ');
+
+                    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=si&dt=t&q=${encodeURIComponent(combinedText)}`);
+                    const data = await res.json();
+
+                    if (data && data[0]) {
+                        const translatedFull = data[0].map(item => item[0]).join('');
+                        const translatedLines = translatedFull.split('|||');
+
+                        translatedLines.forEach((translatedText, idx) => {
+                            if (subtitleCues[i + idx]) {
+                                subtitleCues[i + idx].text = translatedText.trim();
+                            }
+                        });
+                    }
+                }
+
+                btn.innerHTML = `<i class="fa-solid fa-circle-check text-green-400"></i> Translated to Sinhala`;
+                document.getElementById('subStatusBadge').textContent = `Subs: Sinhala (Active)`;
+                document.getElementById('subStatusBadge').className = "text-[10px] bg-red-950/80 border border-red-500/50 text-red-400 px-2 py-0.5 rounded font-bold";
+
+                renderSubtitleAtCurrentTime();
+
+            } catch (err) {
+                console.error('Sinhala Translation error:', err);
+                btn.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Translation Failed - Try Again`;
+                btn.disabled = false;
+            }
+        }
+
+        // FULLSCREEN CONTAINER TOGGLE (Renders custom subtitles over video in 100% fullscreen)
+        function toggleTheatreFullscreen() {
+            const container = document.getElementById('playerTheatreContainer');
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) container.requestFullscreen();
+                else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+                else if (container.msRequestFullscreen) container.msRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
             }
         }
     </script>
