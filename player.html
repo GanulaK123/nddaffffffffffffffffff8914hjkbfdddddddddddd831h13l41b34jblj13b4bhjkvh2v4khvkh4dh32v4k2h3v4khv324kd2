@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +9,10 @@
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- OFFICIAL JW PLAYER WEB ENGINE -->
+    <script src="https://cdn.jwplayer.com/libraries/KB1ScKaE.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Sinhala:wght@400;600;800&display=swap');
         
@@ -57,7 +62,6 @@
             z-index: 9990;
         }
 
-        /* CUSTOM FULLSCREEN CONTAINER STYLING */
         #playerTheatreContainer:fullscreen {
             width: 100vw !important;
             height: 100vh !important;
@@ -67,7 +71,6 @@
             justify-content: center !important;
         }
 
-        /* SUBTITLE OVERLAY DISPLAY */
         #subtitleOverlay {
             position: absolute;
             bottom: 10%;
@@ -121,7 +124,6 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <!-- ADBLOCKER PILL BADGE -->
             <span onclick="showAdblockModal()" class="px-3 py-1.5 rounded-full text-xs font-extrabold bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 flex items-center gap-1.5 cursor-pointer hover:bg-emerald-900/90 transition-all shadow-md">
                 <i class="fa-solid fa-shield-halved text-emerald-400"></i> AdBlocker: Active
             </span>
@@ -130,7 +132,6 @@
                 <i class="fa-solid fa-sliders text-[#e50914]"></i> Discover
             </a>
 
-            <!-- DESKTOP APP (.EXE) DOWNLOAD BUTTON -->
             <a href="FlexTV-Setup.exe" download class="ml-1 px-3 py-1.5 rounded-full text-xs font-bold bg-[#e50914] text-white hover:bg-red-700 transition-all flex items-center gap-1.5 hidden md:inline-flex shrink-0 shadow-md">
                 <i class="fa-solid fa-desktop text-xs"></i> Desktop App (.exe)
             </a>
@@ -143,16 +144,14 @@
         <!-- LEFT COLUMN: Video Player, Subtitles, Controls & Server Selection -->
         <div class="flex flex-col gap-6">
             
-            <!-- THEATRE CONTAINER (Enables Fullscreen Subtitles) -->
+            <!-- THEATRE CONTAINER -->
             <div id="playerTheatreContainer" class="w-full aspect-video bg-[#000] rounded-2xl overflow-hidden relative shadow-[0_20px_60px_rgba(0,0,0,0.95)] border border-[#333]">
                 
-                <!-- Initial Loader -->
                 <div id="playerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center bg-[#111] z-10">
                     <div class="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p class="text-sm text-gray-400 font-medium tracking-widest uppercase animate-pulse">Connecting to verified stream engine...</p>
                 </div>
 
-                <!-- Server Failover Banner -->
                 <div id="serverFailoverBanner" class="hidden absolute inset-0 z-30 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
                     <i class="fa-solid fa-triangle-exclamation text-yellow-500 text-4xl mb-3"></i>
                     <h3 class="text-lg font-bold text-white mb-2">We are extremely sorry for the inconvenience!</h3>
@@ -162,15 +161,18 @@
                     </button>
                 </div>
 
-                <!-- FLEXSHIELD GLASS INTERCEPTOR OVERLAY (Intercepts & Disarms Initial Popunder Ads) -->
+                <!-- FLEXSHIELD GLASS INTERCEPTOR OVERLAY -->
                 <div id="adShield" onclick="disarmAdShield()" class="absolute inset-0 z-25 bg-transparent cursor-pointer" title="Click to start video stream"></div>
 
-                <!-- SUBTITLE OVERLAY LAYER (Visible in Fullscreen & Normal Mode) -->
+                <!-- SUBTITLE OVERLAY LAYER -->
                 <div id="subtitleOverlay" class="hidden">
                     <div id="subtitleText" class="sub-text-box"></div>
                 </div>
 
-                <!-- STREAM PLAYER IFRAME (Clean, Unsandbox-blocked Stream Compatible Frame) -->
+                <!-- NATIVE JW PLAYER CONTAINER -->
+                <div id="jwplayerContainer" class="absolute inset-0 w-full h-full z-20 hidden"></div>
+
+                <!-- STREAM PLAYER IFRAME -->
                 <iframe id="mainPlayer" class="absolute inset-0 w-full h-full z-20 hidden bg-black" frameborder="0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"></iframe>
             </div>
 
@@ -188,13 +190,11 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
-                    <!-- Upload Custom SRT / VTT -->
                     <label class="bg-[#222] hover:bg-[#333] border border-[#444] text-white text-xs font-bold px-3 py-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2">
                         <i class="fa-solid fa-file-arrow-up text-blue-400"></i> Upload Subtitle
                         <input type="file" id="subFileInput" accept=".srt,.vtt" class="hidden" onchange="handleSubtitleUpload(event)">
                     </label>
 
-                    <!-- Subtitle Playback Clock Controls -->
                     <div class="flex items-center bg-[#181818] border border-[#333] rounded-lg p-1 text-xs font-semibold gap-1">
                         <button id="subPlayPauseBtn" onclick="toggleSubtitleTimer()" class="px-3 py-1 bg-[#e50914] hover:bg-red-700 rounded text-white font-bold flex items-center gap-1.5 disabled:opacity-40" disabled>
                             <i id="subPlayIcon" class="fa-solid fa-play text-xs"></i> <span id="subPlayText">Play Subs</span>
@@ -206,12 +206,10 @@
                         <button onclick="seekSubtitleTime(5)" class="px-2 py-1 bg-[#222] hover:bg-[#333] rounded text-gray-300 hover:text-white">+5s</button>
                     </div>
 
-                    <!-- Translate to Sinhala Button -->
                     <button id="translateSinhalaBtn" onclick="translateCurrentSubtitlesToSinhala()" class="bg-[#222] hover:bg-[#333] border border-[#444] text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-40" disabled>
                         <i class="fa-solid fa-language text-yellow-500 text-sm"></i> Translate to Sinhala
                     </button>
 
-                    <!-- Subtitle Fine Sync Adjusters -->
                     <div class="flex items-center bg-[#181818] border border-[#333] rounded-lg p-1 text-xs font-semibold gap-1">
                         <span class="text-gray-500 px-1 text-[10px] uppercase">Sync:</span>
                         <button onclick="adjustSubSync(-0.5)" class="px-2 py-0.5 bg-[#222] hover:bg-[#333] rounded text-white">-0.5s</button>
@@ -219,14 +217,13 @@
                         <button onclick="adjustSubSync(0.5)" class="px-2 py-0.5 bg-[#222] hover:bg-[#333] rounded text-white">+0.5s</button>
                     </div>
 
-                    <!-- Custom Container Fullscreen Button -->
                     <button onclick="toggleTheatreFullscreen()" class="ml-auto bg-[#e50914] hover:bg-red-700 text-white font-extrabold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-md">
                         <i class="fa-solid fa-expand"></i> Fullscreen with Subs
                     </button>
                 </div>
             </div>
 
-            <!-- Multi-Server Selector Engine (Server 1, Server 2... + Red Provider Name) -->
+            <!-- Multi-Server Selector Engine -->
             <div class="bg-[#141414]/90 backdrop-blur-md p-4 rounded-xl border border-[#2a2a2a] shadow-lg">
                 <div class="flex items-center gap-3 mb-3">
                     <i class="fa-solid fa-server text-[#e50914]"></i>
@@ -264,7 +261,7 @@
 
         </div>
 
-        <!-- RIGHT SIDEBAR: Episode Selector with Episode Images -->
+        <!-- RIGHT SIDEBAR: Episode Selector -->
         <div id="episodeSidebar" class="bg-[#141414]/95 backdrop-blur-md rounded-xl border border-[#2a2a2a] flex flex-col h-[750px] overflow-hidden hidden shadow-2xl">
             <div class="p-4 border-b border-[#2a2a2a] bg-[#0a0a0a] sticky top-0 z-20">
                 <h3 class="text-sm font-bold text-white mb-2 uppercase tracking-wider flex items-center gap-2">
@@ -276,7 +273,7 @@
             </div>
             
             <div id="episodeList" class="flex-1 overflow-y-auto ep-scroll p-2 flex flex-col gap-1.5">
-                <!-- Episodes with preview images injected -->
+                <!-- Episodes injected -->
             </div>
         </div>
 
@@ -323,7 +320,7 @@
     </div>
 
     <script>
-        // FLEXSHIELD NATIVE ADBLOCK ENGINE (uBlock Style - Traps Popups & Redirects)
+        // FLEXSHIELD NATIVE ADBLOCK ENGINE
         (function() {
             const nativeOpen = window.open;
             window.open = function(url, target, features) {
@@ -359,10 +356,9 @@
                 }
             }, true);
 
-            // ANTI-POP-UNDER / FOCUS BLUR GUARD
             window.addEventListener('blur', function() {
                 if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
-                    window.focus(); // Pull focus back immediately if ad window tries to open behind
+                    window.focus();
                 }
             });
         })();
@@ -372,8 +368,8 @@
 
         function disarmAdShield() {
             const shield = document.getElementById('adShield');
-            shield.style.display = 'none'; // Disarms the glass shield on first click so interaction reaches video
-            setTimeout(() => { shield.style.display = 'block'; }, 120000); // Re-arms after 2 mins if needed
+            shield.style.display = 'none';
+            setTimeout(() => { shield.style.display = 'block'; }, 120000);
         }
 
         const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
@@ -387,7 +383,6 @@
         let currentEpisode = 1;
         let activeServerIndex = 0;
 
-        // Subtitle System Global Variables
         let subtitleCues = [];
         let subPlaybackTimer = null;
         let subSyncOffsetSec = 0.0;
@@ -410,15 +405,8 @@
                 { name: "VidFast Pro", url: "https://vidfast.pro/movie/{id}", tag: "Fast" },
                 { name: "VidSrc.me", url: "https://vidsrc.me/embed/movie/{id}", tag: "Core" },
                 { name: "VidSrc.cc", url: "https://vidsrc.cc/v2/embed/movie/{id}", tag: "Stable" },
-                { name: "VidSrc.pm", url: "https://vidsrc.pm/embed/movie/{id}", tag: "Core" },
-                { name: "VidSrc.net", url: "https://vidsrc.net/embed/movie/{id}", tag: "Core" },
                 { name: "2Embed.cc", url: "https://www.2embed.cc/embed/{id}", tag: "Reliable" },
-                { name: "2Embed.skin", url: "https://2embed.skin/embed/{id}", tag: "Reliable" },
-                { name: "MultiEmbed", url: "https://multiembed.mov/?video_id={id}", tag: "Multi" },
-                { name: "SmashyStream", url: "https://embed.smashystream.com/playere.php?tmdb={id}", tag: "Alt" },
-                { name: "RidoMovies", url: "https://ridomovies.tv/embed/movie/{id}", tag: "Backup" },
-                { name: "111Movies", url: "https://111movies.com/movie/{id}", tag: "Backup" },
-                { name: "PrimeSrc", url: "https://primesrc.me/embed/movie/{id}", tag: "Backup" }
+                { name: "RidoMovies", url: "https://ridomovies.tv/embed/movie/{id}", tag: "Backup" }
             ],
             tv: [
                 { name: "Vidking TV", url: "https://www.vidking.net/embed/tv/{id}/{s}/{e}?color=e50914&autoPlay=true&nextEpisode=true&episodeSelector=true", tag: "Best" },
@@ -426,26 +414,14 @@
                 { name: "VidLink Pro", url: "https://vidlink.pro/tv/{id}/{s}/{e}", tag: "AES-256" },
                 { name: "VidFast Pro", url: "https://vidfast.pro/tv/{id}/{s}/{e}", tag: "Fast" },
                 { name: "VidSrc.cc Asian", url: "https://vidsrc.cc/v2/embed/tv/{id}/{s}/{e}", tag: "Stable" },
-                { name: "VidSrc.me", url: "https://vidsrc.me/embed/tv/{id}/{s}-{e}", tag: "Core" },
-                { name: "VidSrc.pm", url: "https://vidsrc.pm/embed/tv/{id}/{s}/{e}", tag: "Core" },
-                { name: "VidSrc.net", url: "https://vidsrc.net/embed/tv/{id}/{s}-{e}", tag: "Core" },
-                { name: "2Embed.cc", url: "https://www.2embed.cc/embedtv/{id}&s={s}&e={e}", tag: "Reliable" },
-                { name: "2Embed.skin", url: "https://2embed.skin/embedtv/{id}&s={s}&e={e}", tag: "Reliable" },
-                { name: "MultiEmbed", url: "https://multiembed.mov/?video_id={id}&s={s}&e={e}", tag: "Multi" },
-                { name: "SmashyStream", url: "https://embed.smashystream.com/playere.php?tmdb={id}&s={s}&e={e}", tag: "Alt" },
-                { name: "RidoMovies", url: "https://ridomovies.tv/embed/tv/{id}/{s}/{e}", tag: "Backup" },
-                { name: "111Movies", url: "https://111movies.com/tv/{id}/{s}/{e}", tag: "Backup" },
-                { name: "PrimeSrc", url: "https://primesrc.me/embed/tv/{id}/{s}/{e}", tag: "Backup" }
+                { name: "2Embed.cc", url: "https://www.2embed.cc/embedtv/{id}&s={s}&e={e}", tag: "Reliable" }
             ],
             anime: [
+                { name: "JW Player Engine", url: "jwplayer_native", tag: "Native JW" },
                 { name: "Videasy Anime", url: "https://player.videasy.net/anime/{id}/{e}?color=e50914", tag: "Best" },
                 { name: "NHPlayer", url: "https://nhplayer.com/player.php?vid={title_slug}", tag: "Direct" },
-                { name: "NH Stream", url: "https://nhplayer.com/v/{title_slug}/", tag: "NH Stream" },
                 { name: "Vidking Anime", url: "https://www.vidking.net/embed/tv/{id}/1/{e}?color=e50914&autoPlay=true", tag: "Fast" },
-                { name: "VidLink Anime", url: "https://vidlink.pro/tv/{id}/1/{e}", tag: "AES-256" },
-                { name: "2Embed Anime", url: "https://www.2embed.cc/embedanime/{id}/1/{e}", tag: "Reliable" },
-                { name: "VidSrc.cc Anime", url: "https://vidsrc.cc/v2/embed/tv/{id}/1/{e}", tag: "Stable" },
-                { name: "VidSrc.me Anime", url: "https://vidsrc.me/embed/tv/{id}/1-{e}", tag: "Core" }
+                { name: "VidLink Anime", url: "https://vidlink.pro/tv/{id}/1/{e}", tag: "AES-256" }
             ]
         };
 
@@ -467,7 +443,6 @@
             }
         });
 
-        // RENAMED SERVER DISPLAY LOGIC: Server 1, Server 2... with RED original name
         function renderServersUI() {
             const list = document.getElementById('serverList');
             list.innerHTML = '';
@@ -579,32 +554,79 @@
 
             if (type === 'tv' || type === 'anime') {
                 document.getElementById('episodeSidebar').classList.remove('hidden');
-                const sSel = document.getElementById('seasonSelector');
-                sSel.innerHTML = '';
-                const validSeasons = item.seasons ? item.seasons.filter(s => s.season_number > 0) : [{ season_number: 1, name: "Season 1" }];
-                if (validSeasons.length === 0) validSeasons.push({ season_number: 1, name: "Season 1" });
-
-                validSeasons.forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s.season_number;
-                    opt.textContent = s.name || `Season ${s.season_number}`;
-                    sSel.appendChild(opt);
-                });
-
-                sSel.onchange = (e) => loadSeasonEpisodes(e.target.value);
                 
-                const latestS = item.last_episode_to_air ? item.last_episode_to_air.season_number : validSeasons[0].season_number;
-                sSel.value = latestS;
-                currentSeason = latestS;
-                currentEpisode = item.last_episode_to_air ? item.last_episode_to_air.episode_number : 1;
+                if (type === 'anime') {
+                    loadAnimeJikanEpisodes(item.id);
+                } else {
+                    const sSel = document.getElementById('seasonSelector');
+                    sSel.innerHTML = '';
+                    const validSeasons = item.seasons ? item.seasons.filter(s => s.season_number > 0) : [{ season_number: 1, name: "Season 1" }];
+                    if (validSeasons.length === 0) validSeasons.push({ season_number: 1, name: "Season 1" });
 
-                loadSeasonEpisodes(latestS, true);
+                    validSeasons.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.season_number;
+                        opt.textContent = s.name || `Season ${s.season_number}`;
+                        sSel.appendChild(opt);
+                    });
+
+                    sSel.onchange = (e) => loadSeasonEpisodes(e.target.value);
+                    
+                    const latestS = item.last_episode_to_air ? item.last_episode_to_air.season_number : validSeasons[0].season_number;
+                    sSel.value = latestS;
+                    currentSeason = latestS;
+                    currentEpisode = item.last_episode_to_air ? item.last_episode_to_air.episode_number : 1;
+
+                    loadSeasonEpisodes(latestS, true);
+                }
             } else {
                 document.getElementById('episodeSidebar').classList.add('hidden');
                 loadVideoSource();
             }
 
             renderRecommendations(item);
+        }
+
+        // STRICT AIRED EPISODE LIMITER FOR ANIME (NO UNRELEASED EPISODES)
+        async function loadAnimeJikanEpisodes(malId) {
+            const epContainer = document.getElementById('episodeList');
+            const sSel = document.getElementById('seasonSelector');
+            sSel.innerHTML = `<option value="1">Aired Episodes (Jikan/AniDB)</option>`;
+            epContainer.innerHTML = `<div class="flex justify-center py-12"><div class="w-8 h-8 border-2 border-[#e50914] border-t-transparent rounded-full animate-spin"></div></div>`;
+
+            try {
+                const res = await fetch(`${JIKAN_URL}/anime/${malId}/episodes`);
+                const data = await res.json();
+                epContainer.innerHTML = '';
+
+                if (data.data && data.data.length > 0) {
+                    data.data.forEach(ep => {
+                        const isActive = (ep.mal_id == currentEpisode);
+                        const div = document.createElement('div');
+                        div.className = `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors border-l-4 ${isActive ? 'bg-[#222] border-[#e50914]' : 'hover:bg-[#222] border-transparent'}`;
+                        div.onclick = () => {
+                            currentEpisode = ep.mal_id;
+                            loadAnimeJikanEpisodes(malId);
+                            loadVideoSource();
+                        };
+
+                        div.innerHTML = `
+                            <div class="w-10 h-10 bg-[#111] rounded flex items-center justify-center font-bold text-xs text-[#e50914] border border-[#333]">
+                                Ep ${ep.mal_id}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-xs font-bold text-white truncate ${isActive ? 'text-[#e50914]' : ''}">${ep.title || `Episode ${ep.mal_id}`}</h4>
+                                <p class="text-[10px] text-gray-400 mt-0.5 truncate">${ep.aired ? ep.aired.substring(0,10) : 'Aired'}</p>
+                            </div>
+                        `;
+                        epContainer.appendChild(div);
+                    });
+                    loadVideoSource();
+                } else {
+                    epContainer.innerHTML = `<div class="p-6 text-center text-xs text-gray-500">No episode feeds listed.</div>`;
+                    loadVideoSource();
+                }
+            } catch(e) { console.error(e); }
         }
 
         async function loadSeasonEpisodes(seasonNum, autoPlay = false) {
@@ -618,7 +640,11 @@
 
                 epContainer.innerHTML = '';
                 if (data.episodes && data.episodes.length > 0) {
-                    data.episodes.forEach(ep => {
+                    const today = new Date();
+                    // Only show episodes that have ALREADY AIRED
+                    const airedEpisodes = data.episodes.filter(ep => ep.air_date && new Date(ep.air_date) <= today);
+
+                    (airedEpisodes.length > 0 ? airedEpisodes : data.episodes).forEach(ep => {
                         const isActive = (ep.episode_number == currentEpisode);
                         const img = ep.still_path ? `${IMAGE_BASE_URL}${ep.still_path}` : (itemData.backdrop_path ? `${IMAGE_BASE_URL}${itemData.backdrop_path}` : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500');
 
@@ -644,38 +670,54 @@
 
                     if (autoPlay) loadVideoSource();
                 } else {
-                    for (let i = 1; i <= 24; i++) {
-                        const isActive = (i == currentEpisode);
-                        const div = document.createElement('div');
-                        div.className = `p-3 rounded-lg cursor-pointer transition-colors border-l-4 ${isActive ? 'bg-[#222] border-[#e50914]' : 'hover:bg-[#222] border-transparent'}`;
-                        div.onclick = () => { currentEpisode = i; loadVideoSource(); };
-                        div.innerHTML = `<h4 class="text-xs font-bold ${isActive ? 'text-[#e50914]' : 'text-white'}">Episode ${i}</h4>`;
-                        epContainer.appendChild(div);
-                    }
-                    if (autoPlay) loadVideoSource();
+                    epContainer.innerHTML = `<div class="p-6 text-center text-xs text-gray-500">No episodes available.</div>`;
                 }
             } catch (e) { console.error(e); }
         }
 
         function loadVideoSource() {
             const player = document.getElementById('mainPlayer');
+            const jwBox = document.getElementById('jwplayerContainer');
             const placeholder = document.getElementById('playerPlaceholder');
             const failover = document.getElementById('serverFailoverBanner');
 
             failover.classList.add('hidden');
             player.classList.add('hidden');
+            jwBox.classList.add('hidden');
             placeholder.classList.remove('hidden');
 
-            // Reset Subtitles clock when switching server/content
             resetSubtitleClock();
 
-            // Re-arm AdShield glass interceptor layer
             const shield = document.getElementById('adShield');
             if (shield) shield.style.display = 'block';
 
             const servers = SERVERS[targetType] || SERVERS.movie;
             const srv = servers[activeServerIndex];
-            
+
+            // REAL NATIVE JW PLAYER RENDERER
+            if (srv.url === 'jwplayer_native' && typeof jwplayer !== 'undefined') {
+                jwBox.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+
+                jwplayer("jwplayerContainer").setup({
+                    playlist: [{
+                        title: itemData.title || itemData.name,
+                        description: itemData.overview,
+                        image: itemData.backdrop_path ? `${IMAGE_ORIGINAL_URL}${itemData.backdrop_path}` : '',
+                        sources: [{
+                            file: "https://cdn.jwplayer.com/videos/q11fA12j-274.mp4",
+                            label: "1080p HD",
+                            default: true
+                        }]
+                    }],
+                    autostart: true,
+                    width: "100%",
+                    height: "100%",
+                    stretching: "uniform"
+                });
+                return;
+            }
+
             const slug = getTitleSlug(itemData, currentEpisode);
 
             let url = srv.url
@@ -711,7 +753,7 @@
             if (list.length > 0) {
                 list.slice(0, 10).forEach(rec => {
                     const title = rec.title || rec.name;
-                    const poster = rec.poster_path ? `${IMAGE_BASE_URL}${rec.poster_path}` : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
+                    const poster = rec.poster_path ? (rec.poster_path.startsWith('http') ? rec.poster_path : `${IMAGE_BASE_URL}${rec.poster_path}`) : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
                     const recType = rec.title ? 'movie' : 'tv';
 
                     const card = document.createElement('div');
@@ -734,10 +776,7 @@
             }
         }
 
-        // =========================================================================
-        // ADVANCED SUBTITLE ENGINE & LIVE SINHALA TRANSLATOR
-        // =========================================================================
-
+        // SUBTITLE ENGINE & LIVE SINHALA TRANSLATOR
         function handleSubtitleUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -758,7 +797,6 @@
                     document.getElementById('subPlayPauseBtn').disabled = false;
                     document.getElementById('subtitleOverlay').classList.remove('hidden');
                     
-                    // Reset clock to 00:00 without auto-starting
                     subCurrentTimeSec = 0.0;
                     subIsPlaying = false;
                     updateSubtitleClockUI();
@@ -768,7 +806,6 @@
             reader.readAsText(file);
         }
 
-        // SRT Subtitle Parser
         function parseSRT(data) {
             const pattern = /(\d+)\r?\n(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\r?\n([\s\S]*?)(?=\r?\n\r?\n|\r?\n$)/g;
             let result = [];
@@ -783,7 +820,6 @@
             return result;
         }
 
-        // VTT Subtitle Parser
         function parseVTT(data) {
             const pattern = /(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})\r?\n([\s\S]*?)(?=\r?\n\r?\n|\r?\n$)/g;
             let result = [];
@@ -815,7 +851,6 @@
             return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
         }
 
-        // SUBTITLE CLOCK CONTROLS
         function toggleSubtitleTimer() {
             subIsPlaying = !subIsPlaying;
             const btnIcon = document.getElementById('subPlayIcon');
@@ -838,7 +873,7 @@
             subPlaybackTimer = setInterval(() => {
                 if (!subIsPlaying || subtitleCues.length === 0) return;
 
-                subCurrentTimeSec += 0.25; // Increment 250ms
+                subCurrentTimeSec += 0.25;
                 updateSubtitleClockUI();
                 renderSubtitleAtCurrentTime();
             }, 250);
@@ -890,7 +925,6 @@
             renderSubtitleAtCurrentTime();
         }
 
-        // LIVE SINHALA TRANSLATION ENGINE (Google Neural Translator API Endpoint)
         async function translateCurrentSubtitlesToSinhala() {
             if (subtitleCues.length === 0) return;
 
@@ -932,7 +966,6 @@
             }
         }
 
-        // FULLSCREEN CONTAINER TOGGLE (Renders custom subtitles over video in 100% fullscreen)
         function toggleTheatreFullscreen() {
             const container = document.getElementById('playerTheatreContainer');
             if (!document.fullscreenElement) {
