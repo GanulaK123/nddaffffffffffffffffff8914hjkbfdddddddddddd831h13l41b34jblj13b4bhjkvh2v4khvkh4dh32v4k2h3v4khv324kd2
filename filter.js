@@ -1,320 +1,493 @@
-//==================== FLEX TV - FILTER JS ====================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flex TV - Anime Feed</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:#141414;color:#e5e5e5;overflow-x:hidden;padding-bottom:70px}
+        #splash-screen{position:fixed;inset:0;background:#141414;z-index:99999;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity 0.8s ease-out,visibility 0.8s}
+        .splash-fade{opacity:0;visibility:hidden}
+        ::-webkit-scrollbar{width:8px;height:8px}
+        ::-webkit-scrollbar-track{background:#141414}
+        ::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+        ::-webkit-scrollbar-thumb:hover{background:#e50914}
+        .hide-scroll::-webkit-scrollbar{display:none}
+        .hide-scroll{-ms-overflow-style:none;scrollbar-width:none}
+        .glass-nav{background:linear-gradient(to bottom,rgba(20,20,20,0.95) 0%,rgba(20,20,20,0.8) 100%);backdrop-filter:blur(10px);position:sticky;top:0;z-index:40;padding:14px 24px;border-bottom:1px solid #222}
+        .movie-card{transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),box-shadow 0.3s ease;position:relative;border-radius:8px;overflow:hidden;background:#222;cursor:pointer;height:100%;display:flex;flex-direction:column;box-shadow:0 4px 15px rgba(0,0,0,0.4)}
+        .movie-card:hover{transform:scale(1.05);box-shadow:0 10px 30px rgba(0,0,0,0.8);z-index:10}
+        .gradient-overlay{background:linear-gradient(to top,#141414 0%,rgba(20,20,20,0.6) 40%,transparent 100%);position:absolute;inset:0;pointer-events:none}
+        .theme-btn-active{background-color:#e50914 !important;color:white !important;font-weight:700 !important;box-shadow:0 4px 15px rgba(229,9,20,0.4);border-color:#e50914 !important}
+        .pill-active{background-color:#e50914 !important;color:white !important;border-color:#e50914 !important}
+        .adult-mode-banner{background:linear-gradient(135deg,rgba(220,38,38,0.9),rgba(239,68,68,0.8));border:2px solid #ef4444;box-shadow:0 0 40px rgba(239,68,68,0.3)}
+        #loader{display:none;flex-direction:column;align-items:center;justify-content:center;padding:96px 0}
+        .spinner{width:48px;height:48px;border:4px solid #e50914;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:16px;box-shadow:0 0 15px rgba(229,9,20,0.3)}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        #hoverPopout{transition:opacity 0.2s ease;box-shadow:0 20px 50px rgba(0,0,0,0.95);z-index:9999;background:#181818;border:1px solid #333;border-radius:12px;overflow:hidden;color:white;position:fixed;width:340px;pointer-events:none;opacity:0;display:none;flex-direction:column}
+        .mobile-bottom-nav{position:fixed;bottom:0;left:0;right:0;height:65px;background:rgba(15,15,15,0.95);backdrop-filter:blur(15px);border-top:1px solid #262626;display:none;justify-content:space-around;align-items:center;z-index:9990}
+        @media (max-width:768px){.mobile-bottom-nav{display:flex}}
+        #bg-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;opacity:0.5}
+        .ep-scroll::-webkit-scrollbar{width:4px}
+        .ep-scroll::-webkit-scrollbar-thumb{background:#444;border-radius:4px}
+        .time-badge{background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,0.08);display:inline-block;margin-top:2px}
+        .time-recent{color:#4ade80}
+        .time-upcoming{color:#60a5fa}
+        .time-old{color:#9ca3af}
+        .ep-number{color:#60a5fa;font-weight:700;font-size:10px}
+        .hover-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0}
+        .hover-label{color:#888;font-size:10px;font-weight:600}
+        .hover-value{color:#fff;font-size:11px;font-weight:600}
+        .hover-value.ago{color:#4ade80}
+        .hover-value.next{color:#60a5fa}
+    </style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash-screen">
+    <div class="text-[#e50914] text-5xl md:text-7xl font-black tracking-tighter mb-1 animate-pulse">FLEX <span class="text-white">TV</span></div>
+    <div class="text-[10px] md:text-xs font-semibold tracking-widest text-gray-500 uppercase mb-4">by Ganula</div>
+    <div class="spinner"></div>
+</div>
+
+<!-- BACKGROUND CANVAS -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- HEADER -->
+<header class="glass-nav">
+    <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="text-[#e50914] text-2xl md:text-3xl font-black tracking-tighter hover:scale-105 transition-transform flex items-center gap-2">
+                <img src="favicon.ico" class="w-7 h-7 inline-block" onerror="this.style.display='none'">
+                <span>FLEX <span class="text-white">TV</span></span>
+            </a>
+        </div>
+        <div class="flex bg-[#000] border border-[#333] rounded-full p-1 w-full sm:w-auto overflow-x-auto hide-scroll items-center gap-1">
+            <button onclick="switchTab('movie')" id="tabMovie" class="px-3.5 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:text-white transition-all whitespace-nowrap">Movies</button>
+            <button onclick="switchTab('tv')" id="tabTv" class="px-3.5 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:text-white transition-all whitespace-nowrap">TV Shows</button>
+            <button onclick="switchTab('anime')" id="tabAnime" class="px-3.5 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:text-white transition-all theme-btn-active whitespace-nowrap"><i class="fa-solid fa-fire text-yellow-500 mr-1"></i> Anime</button>
+            <span onclick="showAd()" class="ml-1 px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 flex items-center gap-1.5 cursor-pointer hover:bg-emerald-900/90 transition-all shadow-md shrink-0"><i class="fa-solid fa-shield-halved text-emerald-400"></i> AdBlocker</span>
+            <a href="FlexTV-Setup.exe" download class="ml-1 px-3 py-1.5 rounded-full text-xs font-bold bg-[#e50914] text-white hover:bg-red-700 transition-all flex items-center gap-1.5 hidden md:inline-flex shrink-0 shadow-md"><i class="fa-solid fa-desktop text-xs"></i> Desktop App</a>
+        </div>
+        <div class="relative w-full sm:w-80">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="text" id="searchInput" placeholder="Search titles, anime, series..." class="w-full bg-[#222] border border-[#333] rounded-full pl-11 pr-4 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914] transition-all shadow-inner placeholder-gray-500">
+        </div>
+    </div>
+</header>
+
+<!-- MAIN -->
+<main class="flex-1 max-w-[1400px] w-full mx-auto px-6 py-8 relative z-10">
+
+    <!-- ADULT MODE BANNER -->
+    <div id="adultModeBanner" class="hidden adult-mode-banner rounded-xl p-4 mb-6 border border-red-500/50">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white text-xl font-black animate-pulse">18+</div>
+                <div><h3 class="text-white font-bold text-lg">🔞 Adult Mode Activated</h3><p class="text-gray-300 text-xs">Showing R+ rated content</p></div>
+            </div>
+            <button onclick="disableAdult()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors border border-white/20"><i class="fa-solid fa-times"></i> Disable</button>
+        </div>
+    </div>
+
+    <!-- FILTER PANEL -->
+    <div class="bg-[#181818]/90 backdrop-blur-md rounded-xl p-5 mb-8 border border-[#2a2a2a] flex flex-col gap-5 shadow-lg">
+        <div class="flex items-center justify-between border-b border-[#2a2a2a] pb-3">
+            <div class="flex items-center gap-2 text-sm font-bold text-gray-200" id="filterPanelTitle"><i class="fa-solid fa-fire text-yellow-500"></i> Anime - Live Feed</div>
+            <button onclick="resetFilters()" class="text-xs text-gray-500 hover:text-white transition-colors underline">Clear Filters</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="flex flex-col gap-1.5"><label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Release Year</label><select id="yearFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]"><option value="">All Years</option></select></div>
+            <div class="flex flex-col gap-1.5"><label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Quality</label><select id="qualityFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]"><option value="">All</option><option value="hd">HD / 2K / 4K</option><option value="cam">CAM / TS</option></select></div>
+            <div class="flex flex-col gap-1.5"><label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort By</label>
+                <select id="sortFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]">
+                    <option value="ongoing_2026">Ongoing 2026</option>
+                    <option value="popularity.desc">Most Popular</option>
+                    <option value="score.desc">Highest Rated</option>
+                    <option value="upcoming_episodes">Upcoming</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-1.5"><label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Min Rating</label><select id="minRatingFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]"><option value="0">Any</option><option value="7">7.0+</option><option value="8">8.0+</option><option value="9">9.0+</option></select></div>
+            <div class="flex flex-col gap-1.5"><label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</label><select id="statusFilter" class="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#e50914]"><option value="">All</option><option value="returning">Ongoing</option><option value="ended">Completed</option></select></div>
+        </div>
+        <div id="extraFiltersContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-3 border-t border-[#2a2a2a]">
+            <div class="flex flex-col gap-2"><label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Genres</label><div id="genreContainer" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1 ep-scroll"></div></div>
+            <div class="flex flex-col gap-2"><label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Country</label><div id="countryContainer" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1 ep-scroll"></div></div>
+        </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="flex items-end justify-between gap-4 mb-6"><h2 id="queryTitle" class="text-2xl font-bold text-white tracking-tight">🔥 Ongoing 2026 Anime</h2><div id="totalResultsBadge" class="text-sm text-gray-400 font-medium"></div></div>
+    <div id="movieGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8"></div>
+    <div id="loader"><div class="spinner"></div><p class="text-sm font-medium text-gray-400 tracking-widest uppercase">Fetching Anime Feed...</p></div>
+    <div id="paginationContainer" class="flex flex-wrap items-center justify-center gap-2 mt-16 hidden"></div>
+</main>
+
+<!-- MOBILE NAV -->
+<div class="mobile-bottom-nav">
+    <button onclick="window.location.href='index.html'" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors"><i class="fa-solid fa-house text-lg"></i><span class="text-[10px] font-medium mt-1">Home</span></button>
+    <button onclick="window.location.href='index.html?cat=movie'" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors"><i class="fa-solid fa-film text-lg"></i><span class="text-[10px] font-medium mt-1">Movies</span></button>
+    <button onclick="focusSearchMobile()" class="w-12 h-12 -mt-5 bg-[#e50914] rounded-full flex items-center justify-center text-white shadow-lg border-2 border-[#141414] hover:scale-105 transition-transform active:scale-95"><i class="fa-solid fa-magnifying-glass text-lg"></i></button>
+    <button onclick="window.location.href='index.html?cat=tv'" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors"><i class="fa-solid fa-tv text-lg"></i><span class="text-[10px] font-medium mt-1">TV Shows</span></button>
+    <button onclick="switchTab('anime')" class="flex flex-col items-center text-gray-400 hover:text-white transition-colors"><i class="fa-solid fa-fire text-lg"></i><span class="text-[10px] font-medium mt-1">Anime</span></button>
+</div>
+
+<!-- MODALS -->
+<div id="adblockStatusModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
+    <div class="bg-[#181818] max-w-md w-full rounded-2xl border border-[#333] p-6 shadow-2xl relative text-center">
+        <i class="fa-solid fa-shield-halved text-emerald-400 text-5xl mb-3 animate-pulse"></i>
+        <h3 class="text-xl font-extrabold text-white mb-2">FlexShield AdBlocker Engaged</h3>
+        <p class="text-xs text-gray-300 leading-relaxed mb-6">Our in-built scriptlet blocker operates directly inside Flex TV.</p>
+        <button onclick="hideAd()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-lg text-xs transition-colors shadow-lg">Got it, Thanks!</button>
+    </div>
+</div>
+
+<div id="hoverPopout"></div>
+
+<script>
+//==================== FLEXSHIELD ADBLOCK ====================
+(function(){var nO=window.open;window.open=function(u,t,f){if(!u)return null;try{var d=new URL(u,window.location.href);if(d.origin===window.location.origin||u.includes('player.html')||u.includes('filter.html')||u.includes('index.html')){return nO.apply(window,arguments);}}catch(e){}return null;};})();
+function showAd(){var m=document.getElementById('adblockStatusModal');if(m)m.classList.remove('hidden');}
+function hideAd(){var m=document.getElementById('adblockStatusModal');if(m)m.classList.add('hidden');}
+
+//==================== PARTICLE CANVAS ====================
+var canvas,ctx,particles=[];
+function initCanvas(){canvas=document.getElementById('bg-canvas');if(!canvas)return;ctx=canvas.getContext('2d');resizeC();window.addEventListener('resize',resizeC);for(var i=0;i<50;i++){particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,s:Math.random()*3+1,sy:Math.random()*0.5+0.2,sx:(Math.random()-0.5)*0.5,o:Math.random()*0.3+0.1});}animateP();}
+function resizeC(){if(!canvas)return;canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+function animateP(){if(!ctx)return;ctx.clearRect(0,0,canvas.width,canvas.height);particles.forEach(function(p){p.x+=p.sx;p.y+=p.sy;if(p.y>canvas.height+50){p.y=-50;p.x=Math.random()*canvas.width;}ctx.fillStyle='#ffffff';ctx.globalAlpha=p.o;ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,Math.PI*2);ctx.fill();});requestAnimationFrame(animateP);}
+
+//==================== SPLASH ====================
+function hideSplash(){var s=document.getElementById('splash-screen');if(!s)return;s.classList.add('splash-fade');setTimeout(function(){s.style.display='none';},800);}
+
 //==================== API CONFIG ====================
-const API_KEY="8275056f6ced29fa22cc9fcdb7d41d86";
-const ANILIST_URL="https://graphql.anilist.co";
-const IMG="https://image.tmdb.org/t/p/w500";
+var API_KEY="8275056f6ced29fa22cc9fcdb7d41d86";
+var ANILIST_URL="https://graphql.anilist.co";
+var IMG="https://image.tmdb.org/t/p/w500";
 
 //==================== GLOBALS ====================
-let tab="movie",year="",sort="newest_released",quality="",minRating="0",status="",search="",genres=[],countries=[],page=1,total=0,totalPages=0,timer=null,items={},adult=false,hoverTimeout=null;
+var tab="anime",year="",sort="ongoing_2026",quality="",minRating="0",status="",search="",genres=[],countries=[],page=1,total=0,totalPages=0,timer=null,items={},adult=false,hoverTimeout=null;
 
-const GMAP={28:"Action",12:"Adventure",16:"Animation",35:"Comedy",80:"Crime",99:"Documentary",18:"Drama",10751:"Family",14:"Fantasy",36:"History",27:"Horror",10402:"Music",9648:"Mystery",10749:"Romance",878:"Sci-Fi",53:"Thriller",10752:"War"};
-const CLIST=[{code:"KR",name:"South Korea"},{code:"JP",name:"Japan"},{code:"US",name:"USA"},{code:"GB",name:"UK"},{code:"CN",name:"China"},{code:"IN",name:"India"},{code:"FR",name:"France"}];
+var GMAP={28:"Action",12:"Adventure",16:"Animation",35:"Comedy",80:"Crime",99:"Documentary",18:"Drama",10751:"Family",14:"Fantasy",36:"History",27:"Horror",10402:"Music",9648:"Mystery",10749:"Romance",878:"Sci-Fi",53:"Thriller",10752:"War"};
+var CLIST=[{code:"KR",name:"South Korea"},{code:"JP",name:"Japan"},{code:"US",name:"USA"},{code:"GB",name:"UK"},{code:"CN",name:"China"},{code:"IN",name:"India"},{code:"FR",name:"France"}];
+var ANIME_GENRE_MAP={'28':'Action','12':'Adventure','16':'Animation','35':'Comedy','80':'Crime','18':'Drama','14':'Fantasy','27':'Horror','10749':'Romance','878':'Sci-Fi','53':'Thriller'};
 
-//==================== TIME AGO ====================
-function timeAgo(d){if(!d)return null;const n=Date.now();const s=Math.floor((n-d)/1000);const m=Math.floor(s/60);const h=Math.floor(m/60);const dy=Math.floor(h/24);const w=Math.floor(dy/7);const mo=Math.floor(dy/30);const y=Math.floor(dy/365);if(s<60)return'Just now';if(m<60)return m+' min'+(m>1?'s':'')+' ago';if(h<24)return h+' hour'+(h>1?'s':'')+' ago';if(dy<7)return dy+' day'+(dy>1?'s':'')+' ago';if(w<4)return w+' week'+(w>1?'s':'')+' ago';if(mo<12)return mo+' month'+(mo>1?'s':'')+' ago';return y+' year'+(y>1?'s':'')+' ago';}
+//==================== TIME HELPER - CORRECT: Future = "In X", Past = "X ago" ====================
+function getTimeDisplay(timestamp){
+    var now=Date.now()/1000;
+    var diff=now-timestamp;
+    if(diff<0){
+        diff=Math.abs(diff);
+        if(diff<60)return {text:'In '+Math.floor(diff)+'s',type:'upcoming'};
+        if(diff<3600){var m=Math.floor(diff/60);return {text:'In '+m+'m',type:'upcoming'};}
+        if(diff<86400){var h=Math.floor(diff/3600);return {text:'In '+h+'h',type:'upcoming'};}
+        if(diff<604800){var d=Math.floor(diff/86400);return {text:'In '+d+'d',type:'upcoming'};}
+        var w=Math.floor(diff/604800);return {text:'In '+w+'w',type:'upcoming'};
+    }else{
+        if(diff<60)return {text:'Just now',type:'recent'};
+        if(diff<3600){var m=Math.floor(diff/60);return {text:m+'m ago',type:'recent'};}
+        if(diff<86400){var h=Math.floor(diff/3600);return {text:h+'h ago',type:'recent'};}
+        if(diff<604800){var d=Math.floor(diff/86400);return {text:d+'d ago',type:'recent'};}
+        if(diff<2592000){var w=Math.floor(diff/604800);return {text:w+'w ago',type:'recent'};}
+        var mo=Math.floor(diff/2592000);return {text:mo+'mo ago',type:'recent'};
+    }
+}
 
-//==================== ANIME FETCH (FIXED) ====================
+//==================== ANIME FETCH - FULLY FIXED ====================
 async function fetchAnime(){
-    const ld=document.getElementById('loader'),gr=document.getElementById('movieGrid'),pg=document.getElementById('paginationContainer');
+    var ld=document.getElementById('loader'),gr=document.getElementById('movieGrid'),pg=document.getElementById('paginationContainer');
     if(!ld||!gr)return;
     ld.classList.remove('hidden');
     gr.innerHTML='';
     if(pg)pg.classList.add('hidden');
     items={};
+    
     try{
-        const genreMap={'28':'Action','12':'Adventure','16':'Animation','35':'Comedy','80':'Crime','18':'Drama','14':'Fantasy','27':'Horror','10749':'Romance','878':'Sci-Fi','53':'Thriller'};
-        let animeGenre="";
+        var isUpcoming = (sort==='upcoming_episodes');
+        var isOngoing2026 = (sort==='ongoing_2026');
+        var isPopular = (sort==='popularity.desc');
+        var isScore = (sort==='score.desc');
+        
+        var sortArray = ["POPULARITY_DESC"];
+        if(isScore) sortArray = ["SCORE_DESC"];
+        else if(isPopular) sortArray = ["POPULARITY_DESC"];
+        else if(isOngoing2026) sortArray = ["POPULARITY_DESC"];
+        else if(isUpcoming) sortArray = ["POPULARITY_DESC"];
+        
+        var query = 'query($page:Int,$perPage:Int,$search:String,$genre:String,$year:Int,$status:MediaStatus,$statusIn:[MediaStatus],$sort:[MediaSort],$isAdult:Boolean){Page(page:$page,perPage:$perPage){pageInfo{total currentPage lastPage hasNextPage}media(type:ANIME search:$search genre:$genre seasonYear:$year status:$status status_in:$statusIn sort:$sort isAdult:$isAdult){id idMal title{english romaji native}coverImage{extraLarge large color}bannerImage averageScore meanScore popularity startDate{year month day}endDate{year month day}description(asHtml:false)status episodes duration genres tags{name rank}nextAiringEpisode{airingAt episode timeUntilAiring}}}}';
+        
+        // perPage increased to 100 to show more anime
+        var vars={page:page,perPage:100,isAdult:adult||false,sort:sortArray,statusIn:["RELEASING","FINISHED","HIATUS"]};
+        if(search)vars.search=search;
+        if(year)vars.year=parseInt(year);
         if(genres.length>0){
-            const g=genres.map(id=>genreMap[id]).filter(Boolean);
-            if(g.length>0)animeGenre=g[0];
+            var ag=genres.map(function(id){return ANIME_GENRE_MAP[id];}).filter(Boolean);
+            if(ag.length>0)vars.genre=ag[0];
+        }
+        if(status==='returning'){vars.status="RELEASING";delete vars.statusIn;}
+        else if(status==='ended'){vars.status="FINISHED";delete vars.statusIn;}
+        
+        if(isOngoing2026){
+            vars.year=2026;
+            vars.status="RELEASING";
+            delete vars.statusIn;
+            document.getElementById('queryTitle').textContent='🔥 Ongoing 2026 Anime';
+        }else if(isUpcoming){
+            document.getElementById('queryTitle').textContent='⏰ Upcoming Anime';
+        }else if(isPopular){
+            document.getElementById('queryTitle').textContent='🌟 Most Popular Anime';
+        }else if(isScore){
+            document.getElementById('queryTitle').textContent='⭐ Highest Rated Anime';
         }
         
-        let url=`https://api.jikan.moe/v4/anime?page=${page}&limit=24&order_by=popularity&sort=desc`;
-        if(search)url=`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(search)}&page=${page}&limit=24`;
-        if(animeGenre)url+=`&genres=${encodeURIComponent(animeGenre)}`;
-        if(year)url+=`&start_date=${year}`;
-        if(status==='returning')url+=`&status=airing`;
-        else if(status==='ended')url+=`&status=completed`;
+        if(adult){
+            vars.isAdult=true;
+            delete vars.statusIn;
+            document.getElementById('queryTitle').textContent='🔞 Adult Anime - R+ Rated';
+        }
         
-        const res=await fetch(url);
-        const data=await res.json();
+        var res=await fetch(ANILIST_URL,{
+            method:'POST',
+            headers:{'Content-Type':'application/json','Accept':'application/json'},
+            body:JSON.stringify({query:query,variables:vars})
+        });
+        var data=await res.json();
+        if(data.errors)throw new Error(data.errors[0].message);
         
-        if(data.data&&data.data.length>0){
-            total=data.pagination?.items?.total||data.data.length;
-            totalPages=Math.min(data.pagination?.last_visible_page||1,500);
-            document.getElementById('totalResultsBadge').innerHTML=`<span class="text-[#e50914] font-bold">${data.data.length}</span> Anime Titles`;
+        var list=data.data?.Page?.media||[];
+        
+        if(!adult){
+            list=list.filter(function(m){return m.status!=='NOT_YET_RELEASED';});
+        }
+        
+        // FIX: Remove anime that haven't started airing from Ongoing 2026
+        if(isOngoing2026){
+            var now = Date.now()/1000;
+            list = list.filter(function(m){
+                if(!m.nextAiringEpisode) return true;
+                var lastEpAiring = m.nextAiringEpisode.airingAt - (7*24*60*60);
+                return lastEpAiring < now;
+            });
+        }
+        
+        if(isUpcoming){
+            list=list.filter(function(m){return m.nextAiringEpisode && m.nextAiringEpisode.timeUntilAiring > 0;});
+        }
+        
+        // SORT BY MOST RECENT LAST EPISODE FIRST (smallest "ago" = most recent)
+        if(isOngoing2026 || isUpcoming){
+            list.sort(function(a,b){
+                // Calculate last episode time (7 days before next episode)
+                var aTime = a.nextAiringEpisode ? (a.nextAiringEpisode.airingAt - (7*24*60*60)) : 0;
+                var bTime = b.nextAiringEpisode ? (b.nextAiringEpisode.airingAt - (7*24*60*60)) : 0;
+                // Most recent (largest time) comes first
+                return bTime - aTime;
+            });
+        } else {
+            list.sort(function(a,b){
+                return (b.popularity||0) - (a.popularity||0);
+            });
+        }
+        
+        if(list.length>0){
+            var pi=data.data.Page.pageInfo;
+            total=pi.total||list.length;
+            totalPages=Math.min(pi.lastPage||1,500);
+            var bd=document.getElementById('totalResultsBadge');
+            if(bd)bd.innerHTML='<span class="text-[#e50914] font-bold">'+list.length+'</span> Anime'+(adult?' <span class="text-red-500 font-bold">🔞 R+</span>':'');
             
-            const formatted=data.data.map(a=>{
-                let epInfo=null;
-                if(a.episodes)epInfo=`${a.episodes} eps`;
-                else if(a.status==='Currently Airing')epInfo='Airing';
+            var fmt=list.map(function(a){
+                var timeDisplay=null;
+                var timeType='old';
+                var epNum=null;
+                var nextEpTime=null;
+                var lastEpTime=null;
+                var lastEpNum=null;
+                
+                if(a.nextAiringEpisode){
+                    var airingAt=a.nextAiringEpisode.airingAt;
+                    epNum=a.nextAiringEpisode.episode;
+                    nextEpTime=airingAt;
+                    
+                    // Calculate last episode time (7 days before next episode)
+                    var lastEpAiring = airingAt - (7*24*60*60);
+                    lastEpTime = lastEpAiring;
+                    lastEpNum = epNum - 1;
+                    
+                    // Check if anime has actually started airing
+                    var now = Date.now()/1000;
+                    if(lastEpAiring > now){
+                        // Not started yet - show "Coming Soon"
+                        timeDisplay = 'Coming Soon';
+                        timeType = 'upcoming';
+                    } else {
+                        // Use last episode time for main card display
+                        var td = getTimeDisplay(lastEpAiring);
+                        timeDisplay = td.text;
+                        timeType = td.type;
+                    }
+                }else if(a.status==='FINISHED' && a.episodes){
+                    epNum=a.episodes;
+                    timeDisplay='Completed';
+                    timeType='old';
+                }else if(a.status==='RELEASING'){
+                    timeDisplay='Airing';
+                    timeType='recent';
+                }
+                
                 return{
-                    id:a.mal_id,
-                    title:a.title_english||a.title||'Unknown',
-                    poster:a.images?.jpg?.large_image_url,
-                    backdrop:a.images?.jpg?.large_image_url,
-                    score:a.score||0,
-                    year:a.aired?.from?new Date(a.aired.from).getFullYear():'',
-                    overview:a.synopsis||'No synopsis.',
-                    isAnime:true,
-                    status:a.status||'',
-                    epInfo:epInfo,
-                    genres:a.genres?.map(g=>g.name)||[]
+                    id:a.idMal||a.id,
+                    title:a.title.english||a.title.romaji||a.title.native||'Unknown',
+                    poster:a.coverImage?.extraLarge||a.coverImage?.large,
+                    backdrop:a.bannerImage||a.coverImage?.extraLarge,
+                    score:a.averageScore?(a.averageScore/10):(a.meanScore?a.meanScore/10:0),
+                    year:a.startDate?.year||'',
+                    overview:a.description||'No synopsis.',
+                    isAdult:a.isAdult||false,
+                    genres:a.genres||[],
+                    status:a.status||'Unknown',
+                    maxEpisodes:a.episodes||null,
+                    currentEpisode:epNum,
+                    timeDisplay:timeDisplay,
+                    timeType:timeType,
+                    pop:a.popularity||0,
+                    nextEpTime:nextEpTime,
+                    lastEpTime:lastEpTime,
+                    lastEpNum:lastEpNum
                 };
             });
             
-            renderAnime(formatted,gr);
+            renderAnime(fmt,gr);
             setupPagination();
         }else{
-            gr.innerHTML='<div class="col-span-full text-center py-20 text-gray-500 font-semibold text-lg">No anime found.</div>';
+            var msg='No anime found.';
+            if(adult)msg='🔞 No adult anime found.';
+            else if(isUpcoming)msg='No upcoming episodes found.';
+            gr.innerHTML='<div class="col-span-full text-center py-20 text-gray-500 font-semibold text-lg">'+msg+'<br><span class="text-xs text-gray-600">Try different filters</span></div>';
         }
     }catch(e){
-        console.error('Jikan API error:',e);
-        gr.innerHTML='<div class="col-span-full text-center py-20 text-gray-500 font-semibold text-lg">Error loading anime. Try again.</div>';
+        console.error('AniList API error:',e);
+        gr.innerHTML='<div class="col-span-full text-center py-20 text-gray-500 font-semibold text-lg">⚠️ Error: '+e.message+'<br><span class="text-xs text-gray-600">Try refreshing</span></div>';
     }finally{
         ld.classList.add('hidden');
     }
 }
-
-//==================== RENDER ANIME ====================
+//==================== RENDER ANIME - CORRECT COLORS ====================
 function renderAnime(list,container){
     if(!list||list.length===0){
         container.innerHTML='<div class="col-span-full text-center py-20 text-gray-500 font-semibold text-lg">No anime found.</div>';
         return;
     }
-    list.forEach(it=>{
+    list.forEach(function(it){
         items[it.id]=it;
-        const title=it.title,rating=it.score?it.score.toFixed(1):"N/A";
-        const poster=it.poster?it.poster:'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
-        let ep='';
-        if(it.epInfo)ep=`<span class="text-blue-400 font-bold text-[10px]">${it.epInfo}</span>`;
-        else if(it.status==='Currently Airing')ep=`<span class="text-blue-400 text-[10px] animate-pulse">● Airing</span>`;
-        const qb='<span class="bg-emerald-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">HD</span>';
-        const card=document.createElement('div');
+        var title=it.title,rating=it.score?it.score.toFixed(1):"N/A";
+        var poster=it.poster?it.poster:'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
+        var adult=it.isAdult||false;
+        
+        var epInfo='';
+        if(it.currentEpisode){
+            epInfo='<span class="ep-number">Ep '+it.currentEpisode+'</span>';
+            if(it.maxEpisodes)epInfo+='<span class="text-gray-500 text-[10px]">/'+it.maxEpisodes+'</span>';
+        }else if(it.status==='RELEASING'){
+            epInfo='<span class="text-blue-400 text-[10px] animate-pulse">● Airing</span>';
+        }else if(it.status==='FINISHED'){
+            epInfo='<span class="text-gray-400 text-[10px]">'+(it.maxEpisodes||'?')+' eps</span>';
+        }
+        
+        // CORRECT: Use the timeType to set class
+        var timeHtml='';
+        if(it.timeDisplay){
+            var cls='time-old';
+            if(it.timeType==='recent')cls='time-recent';
+            else if(it.timeType==='upcoming')cls='time-upcoming';
+            timeHtml='<div class="time-badge '+cls+'">'+it.timeDisplay+'</div>';
+        }
+        
+        var ab=adult?'<span class="bg-red-600 text-white font-black px-1.5 py-0.5 rounded text-[10px] animate-pulse">🔞 R+</span>':'';
+        var qb='<span class="bg-emerald-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">HD</span>';
+        
+        var card=document.createElement('div');
         card.className="movie-card";
-        card.onmouseenter=e=>showHover(e.currentTarget,it.id);
+        card.onmouseenter=function(e){showHover(e.currentTarget,it.id);};
         card.onmouseleave=hideHover;
-        card.onclick=()=>window.location.href='player.html?id='+it.id+'&type=anime';
-        card.innerHTML=`<div class="relative aspect-[2/3] w-full bg-[#111]"><img src="${poster}" class="w-full h-full object-cover" loading="lazy"><div class="gradient-overlay"></div><div class="absolute top-2 right-2 left-2 z-10 flex items-center justify-between pointer-events-none"><div>${qb}</div>${rating>0?`<div class="bg-black/80 backdrop-blur-md text-white font-bold px-2 py-1 rounded-md text-[10px] sm:text-xs flex items-center gap-1 border border-[#333]"><i class="fa-solid fa-star text-yellow-500 text-[10px]"></i> ${rating}</div>`:''}</div><div class="absolute bottom-3 left-3 right-3 z-10"><h3 class="font-bold text-xs sm:text-sm text-white line-clamp-2 leading-tight drop-shadow-md">${title}</h3><div class="text-[10px] sm:text-[11px] text-gray-300 mt-1 flex flex-wrap items-center gap-1">${it.year||''} ${ep}</div></div></div>`;
+        card.onclick=function(){window.location.href='player.html?id='+it.id+'&type=anime';};
+        
+        card.innerHTML='<div class="relative aspect-[2/3] w-full bg-[#111]">'+
+            '<img src="'+poster+'" class="w-full h-full object-cover" loading="lazy">'+
+            '<div class="gradient-overlay"></div>'+
+            '<div class="absolute top-2 right-2 left-2 z-10 flex items-center justify-between pointer-events-none">'+
+                '<div class="flex gap-1 flex-wrap">'+qb+ab+'</div>'+
+                (rating>0?'<div class="bg-black/80 backdrop-blur-md text-white font-bold px-2 py-1 rounded-md text-[10px] sm:text-xs flex items-center gap-1 border border-[#333]"><i class="fa-solid fa-star text-yellow-500 text-[10px]"></i> '+rating+'</div>':'')+
+            '</div>'+
+            '<div class="absolute bottom-3 left-3 right-3 z-10">'+
+                '<h3 class="font-bold text-xs sm:text-sm text-white line-clamp-2 leading-tight drop-shadow-md">'+title+'</h3>'+
+                '<div class="text-[10px] sm:text-[11px] text-gray-300 mt-1 flex flex-wrap items-center gap-1">'+
+                    (it.year?'<span>'+it.year+'</span>':'')+' '+epInfo+
+                '</div>'+
+                timeHtml+
+            '</div>'+
+        '</div>';
         container.appendChild(card);
     });
 }
-
-//==================== TMDb FETCH ====================
-async function fetchTMDb(){
-    const ld=document.getElementById('loader'),gr=document.getElementById('movieGrid'),pg=document.getElementById('paginationContainer');
-    if(!ld||!gr)return;
-    ld.classList.remove('hidden');
-    gr.innerHTML='';
-    if(pg)pg.classList.add('hidden');
-    items={};
-    try{
-        const end=tab,isTv=end==='tv',today=new Date().toISOString().split('T')[0];
-        const incAd=(adult||sort==='error_nsfw')?"true":"false";
-        document.getElementById('queryTitle').textContent=adult?'🔞 Adult Mode - R+ Rated':(search?`Results for: "${search}"`:(sort==='upcoming'?`Upcoming ${end==='movie'?'Movies':'TV Shows'}`:`${end==='movie'?'Movies':'TV Shows'}`));
-        let url="";
-        if(search&&!adult){
-            url=`https://api.themoviedb.org/3/search/${end}?api_key=${API_KEY}&query=${encodeURIComponent(search)}&page=${page}&include_adult=${incAd}`;
-            if(year)url+=end==='movie'?`&primary_release_year=${year}`:`&first_air_year=${year}`;
-        }else if(adult||sort==='error_nsfw'){
-            url=`https://api.themoviedb.org/3/discover/${end}?api_key=${API_KEY}&page=${page}&sort_by=popularity.desc&include_adult=true`;
-        }else{
-            let sp=sort,ed="";
-            if(sort==='newest_released'){
-                sp=isTv?'first_air_date.desc':'primary_release_date.desc';
-                ed=isTv?`&first_air_date.lte=${today}&vote_count.gte=1`:`&primary_release_date.lte=${today}&vote_count.gte=1`;
-            }else if(sort==='upcoming'){
-                sp=isTv?'first_air_date.asc':'primary_release_date.asc';
-                ed=isTv?`&first_air_date.gte=${today}`:`&primary_release_date.gte=${today}`;
-            }else if(sort==='vote_average.desc')ed='&vote_count.gte=50';
-            url=`https://api.themoviedb.org/3/discover/${end}?api_key=${API_KEY}&page=${page}&sort_by=${sp}${ed}&include_adult=false`;
-            if(year)url+=end==='movie'?`&primary_release_year=${year}`:`&first_air_year=${year}`;
-            if(genres.length>0)url+=`&with_genres=${genres.join('|')}`;
-            if(countries.length>0)url+=`&with_origin_country=${countries.join('|')}`;
-        }
-        if(minRating&&minRating!=="0"&&!adult)url+=`&vote_average.gte=${minRating}`;
-        const res=await fetch(url);
-        const data=await res.json();
-        let results=data.results||[];
-        if(!adult)results=results.filter(i=>!i.adult);
-        if(results.length>0){
-            total=data.total_results||results.length;
-            totalPages=Math.min(data.total_pages||1,500);
-            document.getElementById('totalResultsBadge').innerHTML=`<span class="text-[#e50914] font-bold">${results.length}</span> Titles`;
-            results.sort((a,b)=>{
-                const da=new Date(a.release_date||a.first_air_date||0).getTime();
-                const db=new Date(b.release_date||b.first_air_date||0).getTime();
-                return db-da;
-            });
-            renderItems(results,gr);
-            setupPagination();
-        }else{
-            gr.innerHTML=`<div class="col-span-full text-center py-20 text-gray-500 font-semibold text-lg">${adult?'No adult content found.':'No titles found.'}</div>`;
-        }
-    }catch(e){console.error(e);gr.innerHTML='<div class="col-span-full text-center py-20 text-gray-500 font-semibold text-lg">Error loading content.</div>';}
-    finally{ld.classList.add('hidden');}
-}
-
-//==================== RENDER ITEMS ====================
-function renderItems(list,container){
-    list.forEach(it=>{
-        items[it.id]=it;
-        const title=it.title||it.name;
-        const ds=it.release_date||it.first_air_date||"";
-        const rating=it.vote_average?it.vote_average.toFixed(1):"N/A";
-        const poster=it.poster_path?IMG+it.poster_path:'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
-        const type=it.title?'movie':'tv';
-        const adult=it.adult===true;
-        const year=ds?ds.substring(0,4):"N/A";
-        const ab=adult?'<span class="bg-red-600 text-white font-black px-1.5 py-0.5 rounded text-[10px] animate-pulse">🔞 R+</span>':'';
-        const qb=(it.id%3===0)?'4K':((it.id%2===0)?'2K':'HD');
-        const card=document.createElement('div');
-        card.className="movie-card";
-        card.onmouseenter=e=>showHover(e.currentTarget,it.id);
-        card.onmouseleave=hideHover;
-        card.onclick=()=>window.location.href='player.html?id='+it.id+'&type='+type;
-        card.innerHTML=`<div class="relative aspect-[2/3] w-full bg-[#111]"><img src="${poster}" class="w-full h-full object-cover" loading="lazy"><div class="gradient-overlay"></div><div class="absolute top-2 right-2 left-2 z-10 flex items-center justify-between pointer-events-none"><div class="flex gap-1 flex-wrap"><span class="bg-emerald-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">${qb}</span>${ab}</div>${rating>0?`<div class="bg-black/80 backdrop-blur-md text-white font-bold px-2 py-1 rounded-md text-[10px] sm:text-xs flex items-center gap-1 border border-[#333]"><i class="fa-solid fa-star text-yellow-500 text-[10px]"></i> ${rating}</div>`:''}</div><div class="absolute bottom-3 left-3 right-3 z-10"><h3 class="font-bold text-xs sm:text-sm text-white line-clamp-2 leading-tight drop-shadow-md">${title}</h3><div class="text-[10px] sm:text-[11px] text-gray-300 mt-1">${year}</div></div></div>`;
-        container.appendChild(card);
-    });
-}
-
-//==================== MAIN FETCH ====================
-function fetchData(){if(tab==='anime')fetchAnime();else fetchTMDb();}
-
-//==================== SWITCH TAB ====================
-function switchTab(t){
-    adult=false;
-    const b=document.getElementById('adultModeBanner');
-    if(b)b.classList.add('hidden');
-    tab=t;
-    page=1;
-    const si=document.getElementById('searchInput');
-    if(si)si.value="";
-    search="";
-    document.querySelectorAll('.theme-btn-active').forEach(e=>e.classList.remove('theme-btn-active'));
-    const btn=document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1));
-    if(btn)btn.classList.add('theme-btn-active');
-    const ft=document.getElementById('filterPanelTitle');
-    const ex=document.getElementById('extraFiltersContainer');
-    if(t==='anime'){
-        if(ft)ft.innerHTML='<i class="fa-solid fa-fire text-yellow-500"></i> Anime - Jikan API';
-        if(ex)ex.classList.add('hidden');
-        document.getElementById('queryTitle').textContent='🔥 Anime Discovery';
-        const sd=document.getElementById('sysDiagOption');
-        if(sd)sd.classList.add('hidden');
-    }else{
-        if(ft)ft.innerHTML='<i class="fa-solid fa-sliders text-[#e50914]"></i> '+(t==='movie'?'Movie':'TV')+' Filters';
-        if(ex)ex.classList.remove('hidden');
-        document.getElementById('queryTitle').textContent=t==='movie'?'Movies':'TV Shows';
-        const sd=document.getElementById('sysDiagOption');
-        if(sd)sd.classList.remove('hidden');
-    }
-    fetchData();
-}
-
-//==================== ADULT MODE ====================
-function enableAdult(){adult=true;const b=document.getElementById('adultModeBanner');if(b)b.classList.remove('hidden');document.getElementById('queryTitle').textContent='🔞 Adult Mode - R+ Rated';const sd=document.getElementById('sysDiagOption');if(sd){sd.textContent='🔞 R+ Rated (Active)';sd.style.color='#ff6b6b';}const sf=document.getElementById('sortFilter');if(sf)sf.value='error_nsfw';sort='error_nsfw';fetchData();}
-function disableAdult(){adult=false;const b=document.getElementById('adultModeBanner');if(b)b.classList.add('hidden');const sd=document.getElementById('sysDiagOption');if(sd){sd.textContent='🔞 R+ Rated (Adult)';sd.style.color='';}const sf=document.getElementById('sortFilter');if(sf)sf.value='newest_released';sort='newest_released';fetchData();}
-
-//==================== FILTERS ====================
-function resetFilters(){
-    ['yearFilter','qualityFilter','sortFilter','minRatingFilter','statusFilter','searchInput'].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el)el.value="";
-    });
-    genres=[];countries=[];search="";year="";quality="";sort="newest_released";minRating="0";status="";page=1;
-    if(adult)disableAdult();
-    else adult=false;
-    populateGenrePills();populateCountryPills();fetchData();
-}
-function populateYearDropdown(){
-    const yf=document.getElementById('yearFilter');
-    if(!yf)return;
-    for(let y=new Date().getFullYear();y>=1930;y--){
-        const o=document.createElement('option');
-        o.value=y;
-        o.textContent=y;
-        yf.appendChild(o);
-    }
-}
-function createPill(id,name,container,stateArray){
-    const btn=document.createElement('button');
-    btn.type='button';
-    btn.textContent=name;
-    btn.className='px-3 py-1.5 rounded-full text-xs font-semibold border transition-all bg-[#222] border-[#333] text-gray-300 hover:border-gray-500 whitespace-nowrap';
-    btn.onclick=()=>{
-        const idx=stateArray.indexOf(id);
-        if(idx>-1){stateArray.splice(idx,1);btn.classList.remove('pill-active');}
-        else{stateArray.push(id);btn.classList.add('pill-active');}
-        page=1;fetchData();
-    };
-    container.appendChild(btn);
-}
-function populateGenrePills(){
-    const c=document.getElementById('genreContainer');
-    if(!c)return;
-    c.innerHTML='';
-    Object.entries(GMAP).forEach(([id,name])=>createPill(id,name,c,genres));
-}
-function populateCountryPills(){
-    const c=document.getElementById('countryContainer');
-    if(!c)return;
-    c.innerHTML='';
-    CLIST.forEach(country=>createPill(country.code,country.name,c,countries));
-}
-
-//==================== PAGINATION ====================
-function setupPagination(){
-    const pc=document.getElementById('paginationContainer');
-    if(!pc)return;
-    pc.classList.remove('hidden');
-    pc.innerHTML='';
-    if(totalPages<=1)return;
-    const cBtn=(c,fn,dis,act)=>{
-        const b=document.createElement('button');
-        b.innerHTML=c;
-        b.className='w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all '+(act?'bg-[#e50914] text-white shadow-[0_0_10px_rgba(229,9,20,0.5)] border-none':dis?'bg-[#111] text-gray-600 border border-[#333]':'bg-[#222] text-gray-300 hover:bg-[#333] border border-[#333]');
-        b.disabled=dis;
-        if(!dis)b.onclick=fn;
-        return b;
-    };
-    pc.appendChild(cBtn('<i class="fa-solid fa-chevron-left"></i>',()=>goToPage(page-1),page===1,false));
-    let pts=[];
-    if(totalPages<=5){for(let i=1;i<=totalPages;i++)pts.push(i);}
-    else{
-        if(page<=3)pts=[1,2,3,4,'...',totalPages];
-        else if(page>=totalPages-2)pts=[1,'...',totalPages-3,totalPages-2,totalPages-1,totalPages];
-        else pts=[1,'...',page-1,page,page+1,'...',totalPages];
-    }
-    pts.forEach(p=>{
-        if(p==='...'){const s=document.createElement('span');s.textContent='...';s.className='px-2 text-gray-500 font-bold';pc.appendChild(s);}
-        else pc.appendChild(cBtn(p,()=>goToPage(p),false,p===page));
-    });
-    pc.appendChild(cBtn('<i class="fa-solid fa-chevron-right"></i>',()=>goToPage(page+1),page>=totalPages,false));
-}
-function goToPage(p){if(p<1||p>totalPages)return;page=p;fetchData();window.scrollTo({top:0,behavior:'smooth'});}
 
 //==================== HOVER POPOUT ====================
 function showHover(el,id){
     clearTimeout(hoverTimeout);
-    const it=items[id];
+    var it=items[id];
     if(!it)return;
-    const pop=document.getElementById('hoverPopout');
+    var pop=document.getElementById('hoverPopout');
     if(!pop)return;
-    const title=it.title||it.name;
-    const overview=it.overview?(it.overview.length>130?it.overview.substring(0,130)+'...':it.overview):'No synopsis.';
-    const bg=it.backdrop||(it.backdrop_path?IMG+it.backdrop_path:'');
-    const type=it.isAnime?'anime':(it.title?'movie':'tv');
-    const adult=it.adult===true||it.isAdult===true;
-    pop.innerHTML=`<div class="w-full h-40 bg-[#111] relative shrink-0">${bg?'<img src="'+bg+'" class="w-full h-full object-cover opacity-80">':''}<div class="absolute inset-0 bg-gradient-to-t from-[#181818] to-transparent"></div><div class="absolute bottom-3 left-4 right-4 font-black text-lg leading-tight text-white drop-shadow-lg line-clamp-2">${title} ${adult?'🔞':''}</div></div><div class="p-4 flex flex-col gap-3"><p class="text-xs text-gray-300 line-clamp-3 leading-relaxed">${overview}</p><div class="flex gap-2 mt-1"><button onclick="window.location.href=\'player.html?id=${it.id}&type=${type}\'; event.stopPropagation();" class="flex-1 bg-white hover:bg-gray-200 text-black font-bold py-2 rounded flex items-center justify-center gap-2 text-xs transition-colors"><i class="fa-solid fa-play"></i> Stream</button><button onclick="window.location.href=\'player.html?id=${it.id}&type=${type}\'; event.stopPropagation();" class="w-10 h-8 rounded border border-gray-500 hover:border-white flex items-center justify-center text-gray-300 hover:text-white transition-colors"><i class="fa-solid fa-info"></i></button></div></div>`;
+    var title=it.title||it.name;
+    var overview=it.overview?(it.overview.length>130?it.overview.substring(0,130)+'...':it.overview):'No synopsis.';
+    var bg=it.backdrop||(it.backdrop_path?IMG+it.backdrop_path:'');
+    var type=it.isAnime?'anime':(it.title?'movie':'tv');
+    var adult=it.adult===true||it.isAdult===true;
+    
+    // Get last episode display (should show "ago")
+    var lastEpDisplay='N/A';
+    if(it.lastEpTime){
+        var td=getTimeDisplay(it.lastEpTime);
+        lastEpDisplay=td.text;
+    }else if(it.status==='FINISHED'){
+        lastEpDisplay='Completed';
+    }
+    
+    // Get next episode display (should show "In")
+    var nextEpDisplay='N/A';
+    if(it.nextEpTime){
+        var td2=getTimeDisplay(it.nextEpTime);
+        nextEpDisplay=td2.text;
+    }else if(it.status==='FINISHED'){
+        nextEpDisplay='Completed';
+    }
+    
+    pop.innerHTML='<div class="w-full h-40 bg-[#111] relative shrink-0">'+(bg?'<img src="'+bg+'" class="w-full h-full object-cover opacity-80">':'')+'<div class="absolute inset-0 bg-gradient-to-t from-[#181818] to-transparent"></div><div class="absolute bottom-3 left-4 right-4 font-black text-lg leading-tight text-white drop-shadow-lg line-clamp-2">'+title+' '+(adult?'🔞':'')+'</div></div>'+
+        '<div class="p-4 flex flex-col gap-2">'+
+            '<p class="text-xs text-gray-300 line-clamp-2 leading-relaxed">'+overview+'</p>'+
+            '<div class="border-t border-[#333] pt-2 mt-1">'+
+                '<div class="hover-row"><span class="hover-label">📺 Last Episode</span><span class="hover-value ago">Ep '+(it.lastEpNum||it.currentEpisode||'?')+' • '+lastEpDisplay+'</span></div>'+
+                '<div class="hover-row"><span class="hover-label">⏰ Next Episode</span><span class="hover-value next">Ep '+(it.currentEpisode?it.currentEpisode+1:'?')+' • '+nextEpDisplay+'</span></div>'+
+            '</div>'+
+            '<div class="flex gap-2 mt-1">'+
+                '<button onclick="window.location.href=\'player.html?id='+it.id+'&type='+type+'\'; event.stopPropagation();" class="flex-1 bg-white hover:bg-gray-200 text-black font-bold py-2 rounded flex items-center justify-center gap-2 text-xs transition-colors"><i class="fa-solid fa-play"></i> Stream</button>'+
+                '<button onclick="window.location.href=\'player.html?id='+it.id+'&type='+type+'\'; event.stopPropagation();" class="w-10 h-8 rounded border border-gray-500 hover:border-white flex items-center justify-center text-gray-300 hover:text-white transition-colors"><i class="fa-solid fa-info"></i></button>'+
+            '</div>'+
+        '</div>';
     pop.style.display='flex';
     pop.style.opacity='0';
-    requestAnimationFrame(()=>{
-        const rect=el.getBoundingClientRect();
-        const pW=pop.offsetWidth||320;
-        const pH=pop.offsetHeight||330;
-        let left=window.innerWidth-rect.right>pW+20?rect.right+10:(rect.left>pW+20?rect.left-pW-10:window.innerWidth/2-pW/2);
-        let top=rect.top+pH>window.innerHeight?window.innerHeight-pH-20:rect.top;
+    requestAnimationFrame(function(){
+        var rect=el.getBoundingClientRect();
+        var pW=pop.offsetWidth||340;
+        var pH=pop.offsetHeight||380;
+        var left=window.innerWidth-rect.right>pW+20?rect.right+10:(rect.left>pW+20?rect.left-pW-10:window.innerWidth/2-pW/2);
+        var top=rect.top+pH>window.innerHeight?window.innerHeight-pH-20:rect.top;
         if(top<20)top=20;
         pop.style.left=left+'px';
         pop.style.top=top+'px';
@@ -323,29 +496,258 @@ function showHover(el,id){
     });
 }
 function hideHover(){
-    const pop=document.getElementById('hoverPopout');
-    hoverTimeout=setTimeout(()=>{
+    var pop=document.getElementById('hoverPopout');
+    hoverTimeout=setTimeout(function(){
         pop.style.opacity='0';
         pop.style.pointerEvents='none';
-        setTimeout(()=>pop.style.display='none',200);
+        setTimeout(function(){pop.style.display='none';},200);
     },100);
 }
 if(document.getElementById('hoverPopout')){
-    document.getElementById('hoverPopout').addEventListener('mouseenter',()=>clearTimeout(hoverTimeout));
+    document.getElementById('hoverPopout').addEventListener('mouseenter',function(){clearTimeout(hoverTimeout);});
     document.getElementById('hoverPopout').addEventListener('mouseleave',hideHover);
+}
+
+//==================== TMDb FETCH ====================
+async function fetchTMDb(){
+    var ld=document.getElementById('loader'),gr=document.getElementById('movieGrid'),pg=document.getElementById('paginationContainer');
+    if(!ld||!gr)return;
+    ld.classList.remove('hidden');
+    gr.innerHTML='';
+    if(pg)pg.classList.add('hidden');
+    items={};
+    try{
+        var end=tab,isTv=end==='tv',today=new Date().toISOString().split('T')[0];
+        var incAd=adult?"true":"false";
+        document.getElementById('queryTitle').textContent=adult?'🔞 Adult Mode - R+ Rated Content':(search?'Results for: "'+search+'"':(end==='movie'?'Movies':'TV Shows'));
+        var url="";
+        
+        if(adult){
+            var adultKeywords=['sex','nude','erotic','sensual','adult','explicit','uncensored','18+'];
+            var keyword=adultKeywords[Math.floor(Math.random()*adultKeywords.length)];
+            url='https://api.themoviedb.org/3/search/'+end+'?api_key='+API_KEY+'&query='+encodeURIComponent(keyword)+'&page='+page+'&include_adult=true';
+        }else if(search){
+            url='https://api.themoviedb.org/3/search/'+end+'?api_key='+API_KEY+'&query='+encodeURIComponent(search)+'&page='+page+'&include_adult='+incAd;
+            if(year)url+=end==='movie'?'&primary_release_year='+year:'&first_air_year='+year;
+        }else{
+            var sp=sort,ed="";
+            if(sort==='newest_released'||sort==='ongoing_2026'){
+                sp=isTv?'first_air_date.desc':'primary_release_date.desc';
+                ed=isTv?'&first_air_date.lte='+today+'&vote_count.gte=1':'&primary_release_date.lte='+today+'&vote_count.gte=1';
+            }else if(sort==='upcoming_episodes'){
+                sp=isTv?'first_air_date.asc':'primary_release_date.asc';
+                ed=isTv?'&first_air_date.gte='+today:'&primary_release_date.gte='+today;
+            }else if(sort==='vote_average.desc'||sort==='score.desc')ed='&vote_count.gte=50';
+            url='https://api.themoviedb.org/3/discover/'+end+'?api_key='+API_KEY+'&page='+page+'&sort_by='+sp+ed+'&include_adult=false';
+            if(year)url+=end==='movie'?'&primary_release_year='+year:'&first_air_year='+year;
+            if(genres.length>0)url+='&with_genres='+genres.join('|');
+            if(countries.length>0)url+='&with_origin_country='+countries.join('|');
+        }
+        if(minRating&&minRating!=="0"&&!adult)url+='&vote_average.gte='+minRating;
+        
+        var res=await fetch(url);
+        var data=await res.json();
+        var results=data.results||[];
+        
+        if(!adult){
+            results=results.filter(function(i){return !i.adult;});
+        }
+        
+        if(results.length>0){
+            total=data.total_results||results.length;
+            totalPages=Math.min(data.total_pages||1,500);
+            var adultCount=results.filter(function(r){return r.adult===true;}).length;
+            var bd=document.getElementById('totalResultsBadge');
+            if(bd)bd.innerHTML='<span class="text-[#e50914] font-bold">'+results.length+'</span> Titles'+(adult?' <span class="text-red-500 font-bold">🔞 '+adultCount+' R+</span>':'');
+            
+            results.sort(function(a,b){
+                var da=new Date(a.release_date||a.first_air_date||0).getTime();
+                var db=new Date(b.release_date||b.first_air_date||0).getTime();
+                return db-da;
+            });
+            renderItems(results,gr);
+            setupPagination();
+        }else{
+            gr.innerHTML='<div class="col-span-full text-center py-20 text-gray-500 font-semibold text-lg">'+(adult?'🔞 No adult content found. Try different keywords.':'No titles found.')+'</div>';
+        }
+    }catch(e){console.error(e);gr.innerHTML='<div class="col-span-full text-center py-20 text-gray-500 font-semibold text-lg">Error loading content.</div>';}
+    finally{ld.classList.add('hidden');}
+}
+
+//==================== RENDER ITEMS (MOVIES & TV) ====================
+function renderItems(list,container){
+    list.forEach(function(it){
+        items[it.id]=it;
+        var title=it.title||it.name;
+        var ds=it.release_date||it.first_air_date||"";
+        var rating=it.vote_average?it.vote_average.toFixed(1):"N/A";
+        var poster=it.poster_path?IMG+it.poster_path:'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
+        var type=it.title?'movie':'tv';
+        var adult=it.adult===true;
+        var year=ds?ds.substring(0,4):"N/A";
+        var ab=adult?'<span class="bg-red-600 text-white font-black px-1.5 py-0.5 rounded text-[10px] animate-pulse">🔞 R+</span>':'';
+        var qb=(it.id%3===0)?'4K':((it.id%2===0)?'2K':'HD');
+        var card=document.createElement('div');
+        card.className="movie-card";
+        card.onmouseenter=function(e){showHover(e.currentTarget,it.id);};
+        card.onmouseleave=hideHover;
+        card.onclick=function(){window.location.href='player.html?id='+it.id+'&type='+type;};
+        card.innerHTML='<div class="relative aspect-[2/3] w-full bg-[#111]"><img src="'+poster+'" class="w-full h-full object-cover" loading="lazy"><div class="gradient-overlay"></div><div class="absolute top-2 right-2 left-2 z-10 flex items-center justify-between pointer-events-none"><div class="flex gap-1 flex-wrap"><span class="bg-emerald-600/90 text-white font-black px-1.5 py-0.5 rounded text-[10px]">'+qb+'</span>'+ab+'</div>'+(rating>0?'<div class="bg-black/80 backdrop-blur-md text-white font-bold px-2 py-1 rounded-md text-[10px] sm:text-xs flex items-center gap-1 border border-[#333]"><i class="fa-solid fa-star text-yellow-500 text-[10px]"></i> '+rating+'</div>':'')+'</div><div class="absolute bottom-3 left-3 right-3 z-10"><h3 class="font-bold text-xs sm:text-sm text-white line-clamp-2 leading-tight drop-shadow-md">'+title+'</h3><div class="text-[10px] sm:text-[11px] text-gray-300 mt-1">'+year+'</div></div></div>';
+        container.appendChild(card);
+    });
+}
+
+//==================== MAIN FETCH ====================
+function fetchData(){
+    if(tab==='anime')fetchAnime();
+    else fetchTMDb();
+}
+
+//==================== SWITCH TAB ====================
+function switchTab(t){
+    tab=t;
+    page=1;
+    var si=document.getElementById('searchInput');
+    if(si)si.value="";
+    search="";
+    document.querySelectorAll('.theme-btn-active').forEach(function(e){e.classList.remove('theme-btn-active');});
+    var btn=document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(btn)btn.classList.add('theme-btn-active');
+    var ft=document.getElementById('filterPanelTitle');
+    var ex=document.getElementById('extraFiltersContainer');
+    if(t==='anime'){
+        if(ft)ft.innerHTML='<i class="fa-solid fa-fire text-yellow-500"></i> Anime - Live Feed';
+        if(ex)ex.classList.add('hidden');
+    }else{
+        if(ft)ft.innerHTML='<i class="fa-solid fa-sliders text-[#e50914]"></i> '+(t==='movie'?'Movie':'TV')+' Filters';
+        if(ex)ex.classList.remove('hidden');
+    }
+    fetchData();
+}
+
+//==================== ADULT MODE ====================
+function enableAdult(){
+    adult=true;
+    var b=document.getElementById('adultModeBanner');
+    if(b)b.classList.remove('hidden');
+    fetchData();
+}
+function disableAdult(){
+    adult=false;
+    var b=document.getElementById('adultModeBanner');
+    if(b)b.classList.add('hidden');
+    fetchData();
+}
+
+//==================== FILTERS ====================
+function resetFilters(){
+    var ids=['yearFilter','qualityFilter','sortFilter','minRatingFilter','statusFilter','searchInput'];
+    ids.forEach(function(id){
+        var el=document.getElementById(id);
+        if(el)el.value="";
+    });
+    genres=[];countries=[];search="";year="";quality="";sort="ongoing_2026";minRating="0";status="";page=1;
+    populateGenrePills();populateCountryPills();fetchData();
+}
+function populateYearDropdown(){
+    var yf=document.getElementById('yearFilter');
+    if(!yf)return;
+    for(var y=new Date().getFullYear();y>=1930;y--){
+        var o=document.createElement('option');
+        o.value=y;
+        o.textContent=y;
+        yf.appendChild(o);
+    }
+}
+function createPill(id,name,container,stateArray){
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.textContent=name;
+    btn.className='px-3 py-1.5 rounded-full text-xs font-semibold border transition-all bg-[#222] border-[#333] text-gray-300 hover:border-gray-500 whitespace-nowrap';
+    btn.onclick=function(){
+        var idx=stateArray.indexOf(id);
+        if(idx>-1){stateArray.splice(idx,1);btn.classList.remove('pill-active');}
+        else{stateArray.push(id);btn.classList.add('pill-active');}
+        page=1;fetchData();
+    };
+    container.appendChild(btn);
+}
+function populateGenrePills(){
+    var c=document.getElementById('genreContainer');
+    if(!c)return;
+    c.innerHTML='';
+    var keys=Object.keys(GMAP);
+    for(var i=0;i<keys.length;i++){
+        var id=keys[i],name=GMAP[id];
+        createPill(id,name,c,genres);
+    }
+}
+function populateCountryPills(){
+    var c=document.getElementById('countryContainer');
+    if(!c)return;
+    c.innerHTML='';
+    for(var i=0;i<CLIST.length;i++){
+        var country=CLIST[i];
+        createPill(country.code,country.name,c,countries);
+    }
+}
+
+//==================== PAGINATION ====================
+function setupPagination(){
+    var pc=document.getElementById('paginationContainer');
+    if(!pc)return;
+    pc.classList.remove('hidden');
+    pc.innerHTML='';
+    if(totalPages<=1)return;
+    var cBtn=function(c,fn,dis,act){
+        var b=document.createElement('button');
+        b.innerHTML=c;
+        b.className='w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all '+(act?'bg-[#e50914] text-white shadow-[0_0_10px_rgba(229,9,20,0.5)] border-none':dis?'bg-[#111] text-gray-600 border border-[#333]':'bg-[#222] text-gray-300 hover:bg-[#333] border border-[#333]');
+        b.disabled=dis;
+        if(!dis)b.onclick=fn;
+        return b;
+    };
+    pc.appendChild(cBtn('<i class="fa-solid fa-chevron-left"></i>',function(){goToPage(page-1);},page===1,false));
+    var pts=[];
+    if(totalPages<=5){
+        for(var i=1;i<=totalPages;i++)pts.push(i);
+    }else{
+        if(page<=3)pts=[1,2,3,4,'...',totalPages];
+        else if(page>=totalPages-2)pts=[1,'...',totalPages-3,totalPages-2,totalPages-1,totalPages];
+        else pts=[1,'...',page-1,page,page+1,'...',totalPages];
+    }
+    pts.forEach(function(p){
+        if(p==='...'){
+            var s=document.createElement('span');
+            s.textContent='...';
+            s.className='px-2 text-gray-500 font-bold';
+            pc.appendChild(s);
+        }else{
+            pc.appendChild(cBtn(p,function(){goToPage(p);},false,p===page));
+        }
+    });
+    pc.appendChild(cBtn('<i class="fa-solid fa-chevron-right"></i>',function(){goToPage(page+1);},page>=totalPages,false));
+}
+function goToPage(p){
+    if(p<1||p>totalPages)return;
+    page=p;
+    fetchData();
+    window.scrollTo({top:0,behavior:'smooth'});
 }
 
 //==================== SEARCH ====================
 function focusSearchMobile(){
-    const input=document.getElementById('searchInput');
+    var input=document.getElementById('searchInput');
     if(input){
         input.scrollIntoView({behavior:'smooth',block:'center'});
         input.focus();
     }
 }
 
-//==================== EVENT LISTENERS ====================
-document.addEventListener('DOMContentLoaded',function(){
+//==================== INIT ====================
+function initPage(){
+    setTimeout(hideSplash,600);
+    initCanvas();
     populateYearDropdown();
     populateGenrePills();
     populateCountryPills();
@@ -355,32 +757,27 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('sortFilter').addEventListener('change',function(){
         sort=this.value;
         page=1;
-        if(sort==='error_nsfw')enableAdult();
-        else{if(adult)disableAdult();fetchData();}
+        fetchData();
     });
     document.getElementById('minRatingFilter').addEventListener('change',function(){minRating=this.value;page=1;fetchData();});
     document.getElementById('statusFilter').addEventListener('change',function(){status=this.value;page=1;fetchData();});
     document.getElementById('searchInput').addEventListener('input',function(e){
-        const val=e.target.value.trim().toLowerCase();
+        var val=e.target.value.trim().toLowerCase();
         if(val==='$animes$'||val==='"$animes$"'||val==='animes'){switchTab('anime');return;}
-        if(val==='$adult$'||val==='"$adult$"'||val==='adult'){enableAdult();document.getElementById('sortFilter').value='error_nsfw';return;}
+        if(val==='$adult$'||val==='"$adult$"'||val==='adult'){enableAdult();return;}
         clearTimeout(timer);
-        timer=setTimeout(()=>{search=e.target.value.trim();page=1;fetchData();},500);
+        timer=setTimeout(function(){search=e.target.value.trim();page=1;fetchData();},500);
     });
     
-    const urlParams=new URLSearchParams(window.location.search);
-    const mode=urlParams.get('mode');
-    const queryParam=urlParams.get('q');
-    const sortParam=urlParams.get('sort');
-    const focusParam=urlParams.get('focus');
-    
-    if(mode==='anime')switchTab('anime');
-    else if(mode==='tv')switchTab('tv');
-    else if(mode==='movie')switchTab('movie');
-    else if(mode==='adult'){enableAdult();document.getElementById('tabMovie').classList.add('theme-btn-active');}
-    
-    if(queryParam){search=queryParam;document.getElementById('searchInput').value=queryParam;}
-    if(sortParam){sort=sortParam;document.getElementById('sortFilter').value=sortParam;if(sortParam==='error_nsfw')enableAdult();}
-    if(!adult&&mode!=='adult')fetchData();
-    if(focusParam==='search')setTimeout(focusSearchMobile,300);
-});
+    fetchData();
+}
+
+//==================== START ====================
+if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',initPage);
+}else{
+    initPage();
+}
+</script>
+</body>
+</html>
